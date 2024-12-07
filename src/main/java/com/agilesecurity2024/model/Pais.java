@@ -1,15 +1,10 @@
 package com.agilesecurity2024.model;
 
 import java.io.Serializable;
-package com.agilesecurity2024.model;
-
-import java.io.Serializable;
 
 public class Pais implements Serializable {
 
-    private static final long serialVersionUID = -2988002029080131424L;
-
-    private String country;  // Cambiado de "common" a "country" para mayor claridad
+    private String country;
     private String mensaje;
     private String capital;
     private String region;

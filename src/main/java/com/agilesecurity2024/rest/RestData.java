@@ -42,5 +42,33 @@ public class RestData {
         LOGGER.log(Level.INFO, "Consulta por país: " + message);
 
         // Inicializa el objeto de respuesta
-        Pais response = new Pais(
+        Pais response = new Pais();
 
+        try {
+            // Procesa la respuesta de la API
+            JsonArray countries = JsonParser.parseString(call.getBody()).getAsJsonArray();
+
+            if (!countries.isEmpty()) {
+                JsonObject country = countries.get(0).getAsJsonObject();
+
+                // Obtiene los valores del nombre común, la capital y el continente
+                String common = country.getAsJsonObject("name").get("common").getAsString();
+                String capital = country.has("capital") ? country.getAsJsonArray("capital").get(0).getAsString() : "No disponible";
+                String continente = country.has("continents") ? country.getAsJsonArray("continents").get(0).getAsString() : "No disponible";
+
+                // Llena el objeto de respuesta
+                response.setCountry(common);
+                response.setCapital(capital);
+                response.setRegion(continente);
+                response.setMensaje("ok");
+            } else {
+                response.setMensaje("No se encontró información para el país: " + message);
+            }
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Error al procesar la respuesta de la API: " + e.getMessage(), e);
+            response.setMensaje("Error al procesar la solicitud.");
+        }
+
+        return response;
+    }
+}
