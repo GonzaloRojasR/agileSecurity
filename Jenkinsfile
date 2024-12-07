@@ -6,15 +6,16 @@ pipeline {
     agent any
         stages {
             stage('Paso 0: Download Code and checkout') {
-            steps {
-                script {
-                    checkout(
+                steps {
+                    script {
+                        checkout(
                                 [$class: 'GitSCM',
                                 branches: [[name: 'main' ]],
                                 userRemoteConfigs: [[url: 'https://github.com/GonzaloRojasR/agileSecurity.git']]])
+                    }
                 }
             }
-            }
+
             stage('Paso 1: Build') {
                 steps {
                     script {
@@ -40,6 +41,7 @@ pipeline {
                     }
                 }
             }
+
             stage('Paso 4: Detener Spring Boot') {
                 steps {
                     script {
@@ -51,7 +53,7 @@ pipeline {
                     }
                 }
             }
-            }
+
             stage('Paso 5: dependencias') {
                 steps {
                     script {
