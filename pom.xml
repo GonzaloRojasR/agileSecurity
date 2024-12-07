@@ -8,10 +8,10 @@
 		<version>2.3.4.RELEASE</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
-	<groupId>com.AgileSecurity</groupId>
-	<artifactId>AgileSecurity</artifactId>
+	<groupId>com.agilesecurity2024</groupId>
+	<artifactId>AgileSecurity2024</artifactId>
 	<version>0.0.1</version>
-	<name>AgileSecurity</name>
+	<name>AgileSecurity2024</name>
 	<description>Proyecto de ejemplo para el desarrollo del diplomado DevOps Universidad de Santiago de Chile 2020</description>
 
 	<properties>

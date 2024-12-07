@@ -4,10 +4,10 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class agilesecurity2024Application {
+public class AgileSecurity2024Application {
 
 	public static void main(String[] args) {
-		SpringApplication.run(agilesecurity2024Application.class, args);
+		SpringApplication.run(AgileSecurity2024Application.class, args);
 	}
 
 }
