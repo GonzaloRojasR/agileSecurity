@@ -29,7 +29,7 @@ pipeline {
                 steps {
                     script {
                         sh 'nohup bash ./mvnw spring-boot:run & >/dev/null'
-                        sh "sleep 10"
+                        sh "sleep 20"
                     }
                 }
             }
@@ -47,7 +47,7 @@ pipeline {
                     script {
                         sh '''
                             echo 'Process Spring Boot Java: ' $(pidof java | awk '{print $1}')
-                            sleep 10
+                            sleep 20
                             kill -9 $(pidof java | awk '{print $1}')
                         '''
                     }
@@ -63,7 +63,6 @@ pipeline {
                             ./mvnw org.owasp:dependency-check-maven:check \
                             -Ddependency-check-output-directory=dependency-check-report \                                                        
                             -Ddependency-check-report-format=XML
-                            ls build
                         '''                        
                     }
                 }
