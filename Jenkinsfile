@@ -59,10 +59,9 @@ pipeline {
                     script {
                         // Ejecuta Dependency-Check
                         sh '''
-                            ./mvnw clean package
-                            ./mvnw org.owasp:dependency-check-maven:check \
-                            -Ddependency-check-output-directory=dependency-check-report \
-                            -Ddependency-check-report-format=XML
+                            mvn org.owasp:dependency-check-maven:check \
+                            -Ddependency-check-output-directory=build \
+                            -Ddependency-check-report-format=ALL
                         '''
                     }
                 }
@@ -72,7 +71,7 @@ pipeline {
         post {
             always {
                 // Archivar los reportes para visualización
-                dependencyCheckPublisher pattern: '**/build/dependency-check-report.html'
+                dependencyCheckPublisher pattern: '**/build/dependency-check-report.xml'
             }
         }
 }
