@@ -13,73 +13,34 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 
 import com.agilesecurity2024.model.Pais;
-import com.agilesecurity2024.model.Mundial;
-import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
 @RestController
 @RequestMapping(path = "/rest/mscovid")
 public class RestData {
-	
-	private final static Logger LOGGER = Logger.getLogger("devops.subnivel.Control");
 
-	
-	@GetMapping(path = "/test", produces = MediaType.APPLICATION_JSON_VALUE)
-	public @ResponseBody Pais getData(@RequestParam(name = "msg") String message){
-		
-		LOGGER.log(Level.INFO, "Proceso exitoso de prueba");
-		
-		Pais response = new Pais();
-		response.setMensaje("Mensaje Recibido: " + message);
-		return response;
-	}
-	
-	
-	@GetMapping(path = "/estadoPais", produces = MediaType.APPLICATION_JSON_VALUE)
-	public @ResponseBody Pais getTotalPais(@RequestParam(name = "pais") String message){
-		RestTemplate restTemplate = new RestTemplate();
-	    ResponseEntity<String> call= restTemplate.getForEntity("https://api.covid19api.com/live/country/" + message ,String.class);
-	    
-	    LOGGER.log(Level.INFO, "Consulta por pais");
-	    
-		Pais response = new Pais();
-		int confirmed = 0;
-		int death = 0;
-		int recovered = 0;
-		Gson gson = new Gson();
-        Pais[] estados = gson.fromJson(call.getBody().toLowerCase(), Pais[].class);
+    private final static Logger LOGGER = Logger.getLogger("devops.subnivel.Control");
 
-        for(Pais estado : estados) {
-        	response.setDate(estado.getDate());
-        	response.setActive(estado.getActive());
-        	confirmed += estado.getConfirmed();
-        	death += estado.getDeaths();
-        	recovered += estado.getRecovered();
-        }
-        
-    	response.setConfirmed(confirmed);
-    	response.setDeaths(death);
-    	response.setRecovered(recovered);
-    	response.setCountry(message);
-    	response.setMensaje("ok");
+    @GetMapping(path = "/test", produces = MediaType.APPLICATION_JSON_VALUE)
+    public @ResponseBody Pais getData(@RequestParam(name = "msg") String message) {
+        LOGGER.log(Level.INFO, "Proceso exitoso de prueba");
 
-		return response;		
-	}
-	
+        Pais response = new Pais();
+        response.setMensaje("Mensaje Recibido: " + message);
+        return response;
+    }
 
-	@GetMapping(path = "/estadoMundial", produces = MediaType.APPLICATION_JSON_VALUE)
-	public @ResponseBody Mundial getTotalMundial(){
-		
-		LOGGER.log(Level.INFO, "Consulta mundial");
-		
-		RestTemplate restTemplate = new RestTemplate();
-	    ResponseEntity<String> call= restTemplate.getForEntity("https://api.covid19api.com/world/total" ,String.class);
-	    Mundial response = new Mundial();
-		Gson gson = new Gson();
-        Mundial estado = gson.fromJson(call.getBody().toLowerCase(), Mundial.class);
-        response.setTotalConfirmed(estado.getTotalConfirmed());
-        response.setTotalDeaths(estado.getTotalDeaths());
-        response.setTotalRecovered(estado.getTotalRecovered());
+    @GetMapping(path = "/estadoPais", produces = MediaType.APPLICATION_JSON_VALUE)
+    public @ResponseBody Pais getPaisInfo(@RequestParam(name = "pais") String message) {
+        RestTemplate restTemplate = new RestTemplate();
 
-		return response;		
-	}
-}
+        // Llama a la API de RestCountries
+        ResponseEntity<String> call = restTemplate.getForEntity("https://restcountries.com/v3.1/name/" + message, String.class);
+
+        LOGGER.log(Level.INFO, "Consulta por país: " + message);
+
+        // Inicializa el objeto de respuesta
+        Pais response = new Pais(
+
