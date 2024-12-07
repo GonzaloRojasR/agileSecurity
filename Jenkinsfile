@@ -34,12 +34,11 @@ pipeline {
             }
 
             stage('Paso 3: test newman maven') {
-            steps {
-                script {
-                     
-                     sh 'newman run ./postman_collection.json'
+                steps {
+                    script {
+                        sh 'newman run ./postman_collection.json'
+                    }
                 }
-            }
             }
             stage('Paso 4: Detener Spring Boot') {
                 steps {
@@ -49,6 +48,14 @@ pipeline {
                             sleep 20
                             kill -9 $(pidof java | awk '{print $1}')
                         '''
+                    }
+                }
+            }
+            }
+            stage('Paso 5: dependencias') {
+                steps {
+                    script {
+                        sh 'mvn org.owasp:dependency-check-maven:check'
                     }
                 }
             }
