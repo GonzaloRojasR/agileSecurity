@@ -59,7 +59,6 @@ pipeline {
                     script {
                         // Ejecuta Dependency-Check
                         sh '''
-                            ./mvnw clean package
                             ./mvnw org.owasp:dependency-check-maven:check \
                             -Ddependency-check-output-directory=dependency-check-report \                                                        
                             -Ddependency-check-report-format=XML
