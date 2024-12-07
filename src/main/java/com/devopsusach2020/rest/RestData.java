@@ -1,5 +1,3 @@
-package com.devopsusach2020.rest;
-
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -12,8 +10,6 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 
-import com.devopsusach2020.model.Pais;
-import com.devopsusach2020.model.Mundial;
 import com.google.gson.Gson;
 
 @RestController

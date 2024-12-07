@@ -1,4 +1,4 @@
-package com.devopsusach2020.model;
+package com.agilesecurity2024.model;
 
 import java.io.Serializable;
 
