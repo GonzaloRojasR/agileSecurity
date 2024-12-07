@@ -10,4 +10,4 @@ public class AgileSecurity2024Application {
 		SpringApplication.run(AgileSecurity2024Application.class, args);
 	}
 
-}
+} 
