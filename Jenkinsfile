@@ -13,7 +13,7 @@ pipeline {
                                 //Acá reemplazar por el nonbre de branch
                                 branches: [[name: 'main' ]],
                                 //Acá reemplazar por su propio repositorio
-                                userRemoteConfigs: [[url: 'https://github.com/ZaloRED/ejemplo-maven.git']]])
+                                userRemoteConfigs: [[url: 'https://github.com/GonzaloRojasR/agileSecurity.git']]])
                 }
             }
             }
