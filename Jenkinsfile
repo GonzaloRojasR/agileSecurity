@@ -10,14 +10,12 @@ pipeline {
                 script {
                     checkout(
                                 [$class: 'GitSCM',
-                                //Acá reemplazar por el nonbre de branch
                                 branches: [[name: 'main' ]],
-                                //Acá reemplazar por su propio repositorio
                                 userRemoteConfigs: [[url: 'https://github.com/GonzaloRojasR/agileSecurity.git']]])
                 }
             }
             }
-            stage('Paso 1: Build test') {
+            stage('Paso 1: Build') {
                 steps {
                     script {
                         sh 'chmod +x mvnw'
