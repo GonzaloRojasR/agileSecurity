@@ -62,7 +62,7 @@ pipeline {
                             ./mvnw clean package
                             ./mvnw org.owasp:dependency-check-maven:check \
                             -Ddependency-check-output-directory=dependency-check-report \
-                            -Ddependency-check-report-format=ALL
+                            -Ddependency-check-report-format=XML
                         '''
                     }
                 }
