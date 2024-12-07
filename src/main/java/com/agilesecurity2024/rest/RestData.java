@@ -1,3 +1,5 @@
+package com.agilesecurity2024.rest;
+
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -10,6 +12,8 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 
+import com.agilesecurity2024.model.Pais;
+import com.agilesecurity2024.model.Mundial;
 import com.google.gson.Gson;
 
 @RestController
