@@ -71,7 +71,7 @@ pipeline {
         post {
             always {
                 // Archivar los reportes para visualización
-                dependencyCheckPublisher pattern: '**/build/dependency-check-report.xml'
+                dependencyCheckPublisher pattern: '**/build/dependency-check-report/dependency-check-report.xml'
             }
         }
 }
