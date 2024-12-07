@@ -17,7 +17,7 @@ pipeline {
                 }
             }
             }
-            stage('Paso 1: Build') {
+            stage('Paso 1: Build test') {
                 steps {
                     script {
                         sh './mvnw clean package -e'
