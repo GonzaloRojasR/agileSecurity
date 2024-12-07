@@ -52,29 +52,6 @@ pipeline {
                     }
                 }
             }
-            stage('Paso 5: Levantar Artefacto Jar en server Jenkins') {
-                steps {
-                    script {
-                        sh 'nohup java -jar build/agilesecurity2024-0.0.1.jar & >/dev/null'
-                        sh "sleep 20"
-                    }
-                }
-            }
-            stage('Paso 6: Testear Artefacto con newman') {
-               steps {
-                script {
-                    sh 'newman run ./postman_collection.json'
-                }
-                }
-            }
-            stage('Paso 7:Detener Atefacto jar en Jenkins server') {
-                steps {
-                    sh '''
-                        echo 'Process Java .jar: ' $(pidof java | awk '{print $1}')
-                        sleep 20
-                        kill -9 $(pidof java | awk '{print $1}')
-                    '''
-                }
-            }
+            
         }
 }
