@@ -54,13 +54,24 @@ pipeline {
                 }
             }
 
-            stage('Paso 5: dependencias') {
+            stage('Paso 5: OWASP Dependency-Check') {
                 steps {
                     script {
-                        sh 'mvn org.owasp:dependency-check-maven:check'
+                        // Ejecuta Dependency-Check
+                        sh '''
+                            ./mvnw org.owasp:dependency-check-maven:check \
+                            -Ddependency-check-report-format=ALL \
+                            -Ddependency-check-output-directory=dependency-check-report
+                        '''
                     }
                 }
             }
             
+        }
+        post {
+            always {
+                // Archivar los reportes para visualización
+                dependencyCheckPublisher pattern: '**/dependency-check-report/dependency-check-report.xml'
+            }
         }
 }
