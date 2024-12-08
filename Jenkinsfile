@@ -5,7 +5,7 @@ def jsonParse(def json) {
 pipeline {
     agent any
         stages {
-            stage('Paso 0: Download Code and checkout TESTforMR04.01') {
+            stage('Paso 0: Download Code and checkout TESTforMR04.02') {
                 steps {
                     script {
                         checkout(
