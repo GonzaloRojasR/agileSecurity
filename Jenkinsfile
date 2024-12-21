@@ -40,19 +40,7 @@ pipeline {
                         sh 'newman run ./postman_collection.json'
                     }
                 }
-            }
-
-            stage('Paso 4: Detener Spring Boot') {
-                steps {
-                    script {
-                        sh '''
-                            echo 'Process Spring Boot Java: ' $(pidof java | awk '{print $1}')
-                            sleep 20
-                            kill -9 $(pidof java | awk '{print $1}')
-                        '''
-                    }
-                }
-            }
+            }           
 
             stage('Paso 5: OWASP Dependency-Check') {
                 steps {
@@ -64,12 +52,6 @@ pipeline {
                             -Ddependency-check-report-format=ALL
                         '''
                     }
-                }
-            }
-            stage('Clonar Repositorio') {
-                steps {
-                    // Clona tu repositorio
-                    git url: 'https://github.com/tu-repo.git'
                 }
             }
             stage('Iniciar OWASP ZAP') {
@@ -86,8 +68,8 @@ pipeline {
             stage('Pruebas de Seguridad con OWASP ZAP') {
                 steps {
                     // Ejecuta un escaneo con OWASP ZAP
-                    zapAttack scanPolicyName: 'Default Policy',
-                            targetUrl: 'http://tu-aplicacion:puerto',
+                            zapAttack scanPolicyName: 'Default Policy',
+                            targetUrl: 'http://localhost:8081',
                             reportFilename: 'zap-report.html',
                             reportTitle: 'Reporte OWASP ZAP'
                 }
@@ -104,7 +86,19 @@ pipeline {
                         reportName: 'OWASP ZAP Report'
                     ])
                 }
-            }        
+            } 
+
+            stage('Final: Detener Spring Boot') {
+                steps {
+                    script {
+                        sh '''
+                            echo 'Process Spring Boot Java: ' $(pidof java | awk '{print $1}')
+                            sleep 20
+                            kill -9 $(pidof java | awk '{print $1}')
+                        '''
+                    }
+                }
+            }      
             
         }
         post {
