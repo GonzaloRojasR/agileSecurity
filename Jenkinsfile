@@ -2,6 +2,7 @@ import groovy.json.JsonSlurperClassic
 def jsonParse(def json) {
     new groovy.json.JsonSlurperClassic().parseText(json)
 }
+
 pipeline {
     agent any
         stages {
@@ -29,7 +30,7 @@ pipeline {
                 steps {
                     script {
                         sh 'nohup bash ./mvnw spring-boot:run & >/dev/null'
-                        sh "sleep 20"
+                        sh "sleep 20" // Tiempo para asegurar que la aplicación esté arriba
                     }
                 }
             }
@@ -45,7 +46,6 @@ pipeline {
             stage('Paso 5: OWASP Dependency-Check') {
                 steps {
                     script {
-                        // Ejecuta Dependency-Check
                         sh '''
                             mvn org.owasp:dependency-check-maven:check \
                             -Ddependency-check-output-directory=build \
@@ -54,7 +54,8 @@ pipeline {
                     }
                 }
             }
-            stage('Iniciar OWASP ZAP test') {
+
+            stage('Iniciar OWASP ZAP') {
                 steps {
                     script {
                         // Verifica si ZAP está corriendo antes de continuar
@@ -65,18 +66,33 @@ pipeline {
                     }
                 }
             }
-            stage('Pruebas de Seguridad con OWASP ZAP') {
+
+            stage('Escaneo OWASP ZAP en /rest/mscovid/test') {
                 steps {
-                    // Ejecuta un escaneo con OWASP ZAP
-                            zapAttack scanPolicyName: 'Default Policy',
-                            targetUrl: 'http://localhost:8081',
-                            reportFilename: 'zap-report.html',
-                            reportTitle: 'Reporte OWASP ZAP'
+                    script {
+                        sh '''
+                            curl -X POST "http://localhost:9090/JSON/ascan/action/scan/" \
+                            --data "url=http://localhost:8081/rest/mscovid/test&recurse=true" \
+                            --data "scanPolicyName=Default Policy"
+                        '''
+                    }
                 }
             }
-            stage('Publicar Reporte') {
+
+            stage('Escaneo OWASP ZAP en /rest/mscovid/estadoPais') {
                 steps {
-                    // Publica el reporte en Jenkins
+                    script {
+                        sh '''
+                            curl -X POST "http://localhost:9090/JSON/ascan/action/scan/" \
+                            --data "url=http://localhost:8081/rest/mscovid/estadoPais&recurse=true" \
+                            --data "scanPolicyName=Default Policy"
+                        '''
+                    }
+                }
+            }
+
+            stage('Publicar Reporte OWASP ZAP') {
+                steps {
                     publishHTML(target: [
                         allowMissing: false,
                         alwaysLinkToLastBuild: true,
@@ -86,14 +102,13 @@ pipeline {
                         reportName: 'OWASP ZAP Report'
                     ])
                 }
-            } 
+            }
 
             stage('Final: Detener Spring Boot') {
                 steps {
                     script {
                         sh '''
-                            echo 'Process Spring Boot Java: ' $(pidof java | awk '{print $1}')
-                            sleep 20
+                            echo 'Deteniendo Spring Boot: ' $(pidof java | awk '{print $1}')
                             kill -9 $(pidof java | awk '{print $1}')
                         '''
                     }
@@ -103,7 +118,6 @@ pipeline {
         }
         post {
             always {
-                // Archivar los reportes para visualización
                 dependencyCheckPublisher pattern: '**/build/dependency-check-report/dependency-check-report.xml'
             }
         }
