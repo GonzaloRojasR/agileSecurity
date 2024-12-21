@@ -94,7 +94,6 @@ pipeline {
                         reportName: 'OWASP ZAP Report'
                     ])
                 }
-            }       
 
             stage('Final: Detener Spring Boot') {
                 steps {
