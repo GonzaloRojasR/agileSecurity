@@ -95,15 +95,7 @@ pipeline {
                     ])
                 }
             }
-
-            stage('Mover Reporte al Workspace') {
-                steps {
-                    script {
-                        // Asegúrate de que el reporte está en el directorio del pipeline
-                        sh 'cp /ruta/donde/esta/zap-report.html ./'
-                    }
-                }
-            }
+         
             stage('Publicar Reporte') {
                 steps {
                     publishHTML(target: [
