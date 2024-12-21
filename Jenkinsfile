@@ -5,7 +5,7 @@ def jsonParse(def json) {
 pipeline {
     agent any
         stages {
-            stage('Paso 0: Download Code and checkout TESTforMR04.03') {
+            stage('Paso 0: Download Code and checkout') {
                 steps {
                     script {
                         checkout(
@@ -63,6 +63,17 @@ pipeline {
                             -Ddependency-check-output-directory=build \
                             -Ddependency-check-report-format=ALL
                         '''
+                    }
+                }
+            }
+            stage('Iniciar OWASP ZAP') {
+            steps {
+                script {
+                    // Verifica si ZAP está corriendo antes de continuar
+                    def zapStatus = sh(script: "curl -s http://localhost:9090", returnStatus: true)
+                    if (zapStatus != 0) {
+                        error "OWASP ZAP no está disponible en el puerto 9090"
+                        }
                     }
                 }
             }
