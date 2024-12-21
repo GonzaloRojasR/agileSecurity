@@ -30,6 +30,7 @@ pipeline {
                 steps {
                     script {
                         sh 'nohup bash ./mvnw spring-boot:run & >/dev/null'
+                        sh "pwd"
                         sh "sleep 20" // Tiempo para asegurar que la aplicación esté arriba
                     }
                 }
