@@ -68,32 +68,23 @@ pipeline {
                 }
             }
 
-            stage('Escaneo OWASP ZAP en /rest/mscovid/test') {
+            stage('Escaneo OWASP ZAP') {
                 steps {
                     script {
                         sh '''
                             curl -X POST "http://localhost:9090/JSON/ascan/action/scan/" \
-                            --data "url=http://localhost:8081/rest/mscovid/test&recurse=true" \
+                            --data "url=http://localhost:8081/" \
                             --data "scanPolicyName=Default Policy"
                         '''
                     }
                 }
             }
-
-            stage('Escaneo OWASP ZAP en /rest/mscovid/estadoPais') {
-                steps {
-                    script {
-                        sh '''
-                            curl -X POST "http://localhost:9090/JSON/ascan/action/scan/" \
-                            --data "url=http://localhost:8081/rest/mscovid/estadoPais&recurse=true" \
-                            --data "scanPolicyName=Default Policy"
-                        '''
-                    }
-                }
-            }
-
+            
             stage('Publicar Reporte OWASP ZAP') {
                 steps {
+                    script {
+                        sh 'rm -f nohup.out'
+                    }
                     publishHTML(target: [
                         allowMissing: false,
                         alwaysLinkToLastBuild: true,
