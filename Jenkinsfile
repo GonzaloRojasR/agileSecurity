@@ -66,7 +66,7 @@ pipeline {
                     }
                 }
             }
-            stage('Iniciar OWASP ZAP') {
+            stage('Paso 6: Iniciar OWASP ZAP') {
             steps {
                 script {
                     // Verifica si ZAP está corriendo antes de continuar
