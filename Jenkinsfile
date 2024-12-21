@@ -94,21 +94,7 @@ pipeline {
                         reportName: 'OWASP ZAP Report'
                     ])
                 }
-            }
-         
-            stage('Publicar Reporte') {
-                steps {
-                    publishHTML(target: [
-                        allowMissing: false,
-                        alwaysLinkToLastBuild: true,
-                        keepAll: true,
-                        reportDir: '.',
-                        reportFiles: 'zap-report.html',
-                        reportName: 'Reporte OWASP ZAP'
-                    ])
-                }
-            }
-
+            }       
 
             stage('Final: Detener Spring Boot') {
                 steps {
