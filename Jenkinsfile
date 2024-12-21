@@ -66,6 +66,17 @@ pipeline {
                     }
                 }
             }
+            stage('Iniciar OWASP ZAP') {
+            steps {
+                script {
+                    // Verifica si ZAP está corriendo antes de continuar
+                    def zapStatus = sh(script: "curl -s http://localhost:9090", returnStatus: true)
+                    if (zapStatus != 0) {
+                        error "OWASP ZAP no está disponible en el puerto 9090"
+                        }
+                    }
+                }
+            }
             
         }
         post {
