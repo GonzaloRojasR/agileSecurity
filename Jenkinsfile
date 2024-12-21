@@ -66,17 +66,45 @@ pipeline {
                     }
                 }
             }
+            stage('Clonar Repositorio') {
+                steps {
+                    // Clona tu repositorio
+                    git url: 'https://github.com/tu-repo.git'
+                }
+            }
             stage('Iniciar OWASP ZAP') {
-            steps {
-                script {
-                    // Verifica si ZAP está corriendo antes de continuar
-                    def zapStatus = sh(script: "curl -s http://localhost:9090", returnStatus: true)
-                    if (zapStatus != 0) {
-                        error "OWASP ZAP no está disponible en el puerto 9090"
+                steps {
+                    script {
+                        // Verifica si ZAP está corriendo antes de continuar
+                        def zapStatus = sh(script: "curl -s http://localhost:9090", returnStatus: true)
+                        if (zapStatus != 0) {
+                            error "OWASP ZAP no está disponible en el puerto 9090"
                         }
                     }
                 }
             }
+            stage('Pruebas de Seguridad con OWASP ZAP') {
+                steps {
+                    // Ejecuta un escaneo con OWASP ZAP
+                    zapAttack scanPolicyName: 'Default Policy',
+                            targetUrl: 'http://tu-aplicacion:puerto',
+                            reportFilename: 'zap-report.html',
+                            reportTitle: 'Reporte OWASP ZAP'
+                }
+            }
+            stage('Publicar Reporte') {
+                steps {
+                    // Publica el reporte en Jenkins
+                    publishHTML(target: [
+                        allowMissing: false,
+                        alwaysLinkToLastBuild: true,
+                        keepAll: true,
+                        reportDir: '.',
+                        reportFiles: 'zap-report.html',
+                        reportName: 'OWASP ZAP Report'
+                    ])
+                }
+            }        
             
         }
         post {
