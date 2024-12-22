@@ -160,20 +160,20 @@ pipeline {
             }
         }
 
-         stage('Obtener Tag de Jira') {
+        stage('Obtener Tag de Jira') {
             steps {
                 script {
                     // Asegúrate de traer todas las etiquetas remotas
                     sh "git fetch --tags"
         
-                    // Intentar obtener el tag asociado al último commit
+                    // Obtener todas las etiquetas que coincidan con el formato SCRUM-#
                     def jiraTag = sh(
-                        script: '''git tag --contains $(git rev-parse HEAD) | grep -oE 'SCRUM-[0-9]+' || echo "NoTag"''',
+                        script: '''git tag | grep -oE 'SCRUM-[0-9]+' || echo "NoTag"''',
                         returnStdout: true
                     ).trim()
         
                     if (jiraTag == "NoTag") {
-                        error "No se encontró ninguna etiqueta asociada al último commit"
+                        error "No se encontró ninguna etiqueta con el formato SCRUM-# en el repositorio"
                     } else {
                         echo "Etiqueta de Jira detectada: ${jiraTag}"
                         env.JIRA_TAG = jiraTag // Guardar la etiqueta como variable de entorno
@@ -182,45 +182,33 @@ pipeline {
             }
         }
         
-        stage('Paso 10: Comentar en Jira') {
+        stage('Comentar en Jira') {
             steps {
                 script {
-                    def jiraIssue = sh(
-                        script: '''
-                            git fetch --tags
-                            git tag --contains $(git log -1 --pretty=format:"%H") | grep -oE 'SCRUM-[0-9]+'
-                        ''',
-                        returnStdout: true
-                    ).trim()
-
-                    if (!jiraIssue) {
-                        error "No se encontró un número de historia Jira en las etiquetas"
-                    }
-
                     def jiraUrl = 'https://agile-security-test.atlassian.net'
-                    def comment = "Despliegue en producción completado"
-
-                    sh '''
-                        curl -X POST -u ${JIRA_API_EMAIL}:${JIRA_API_TOKEN} "${jiraUrl}/rest/api/3/issue/${jiraIssue}/comment" \
-                        -H "Content-Type: application/json" \
-                        -d '{
-                            "body": {
-                                "type": "doc",
-                                "version": 1,
-                                "content": [
-                                    {
+                    def comment = "Despliegue asociado a la historia ${env.JIRA_TAG}"
+        
+                    sh """
+                        curl -X POST -u $EMAIL:$JIRA_API_TOKEN "${jiraUrl}/rest/api/3/issue/${env.JIRA_TAG}/comment" \
+                            -H "Content-Type: application/json" \
+                            -d '{
+                                  "body": {
+                                    "type": "doc",
+                                    "version": 1,
+                                    "content": [
+                                      {
                                         "type": "paragraph",
                                         "content": [
-                                            {
-                                                "text": "${comment}",
-                                                "type": "text"
-                                            }
+                                          {
+                                            "text": "${comment}",
+                                            "type": "text"
+                                          }
                                         ]
-                                    }
-                                ]
-                            }
-                        }'
-                    '''
+                                      }
+                                    ]
+                                  }
+                                }'
+                    """
                 }
             }
         }
