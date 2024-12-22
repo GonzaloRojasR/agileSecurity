@@ -86,7 +86,7 @@ pipeline {
                 script {
                     sh '''
                         curl -X POST "http://localhost:9090/JSON/ascan/action/scan/" \
-                        --data "url=http://localhost:8081" \
+                        --data "url=http://localhost:8081/rest/mscovid/test" \
                         --data "scanPolicyName=Default Policy"
                         sleep 30
                     '''
