@@ -159,8 +159,6 @@ pipeline {
             }
         }
 
-        
-       stages {
         stage('Paso 10: Comentar en Jira') {
             steps {
                 script {
@@ -210,9 +208,7 @@ pipeline {
                 }
             }
         }
-    }
-
-
+    
         stage('Paso Final: Detener Spring Boot') {
             steps {
                 script {
