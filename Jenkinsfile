@@ -41,12 +41,13 @@ pipeline {
                 script {
                     withSonarQubeEnv('SonarQube') {
                         sh """
-                        ./mvnw sonar:sonar \
-                        -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
-                        -Dsonar.projectName=${SONAR_PROJECT_NAME} \
-                        -Dsonar.host.url=${SONAR_HOST_URL} \
-                        -Dsonar.login=${env.SONAR_TOKEN}
-                        """ || echo "SonarQube analysis failed"
+                        ./mvnw clean compile sonar:sonar \
+                          -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
+                          -Dsonar.projectName=${SONAR_PROJECT_NAME} \
+                          -Dsonar.host.url=${SONAR_HOST_URL} \
+                          -Dsonar.login=${env.SONAR_TOKEN} \
+                          -Dsonar.java.binaries=target/classes
+                        """
                     }
                 }
             }
