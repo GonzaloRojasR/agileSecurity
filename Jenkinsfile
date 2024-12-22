@@ -183,6 +183,8 @@ pipeline {
 
                     // Enviar el comentario a Jira
                     sh """
+                        echo ${branchName}
+                        echo ${issueKey}
                         curl -X POST -u ${JIRA_API_EMAIL}:${JIRA_API_TOKEN} \
                             "${jiraUrl}/rest/api/3/issue/${issueKey}/comment" \
                             -H "Content-Type: application/json" \
