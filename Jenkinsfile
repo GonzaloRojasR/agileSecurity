@@ -160,19 +160,30 @@ pipeline {
         }
 
         
+       stages {
         stage('Paso 10: Comentar en Jira') {
             steps {
                 script {
-                    def issueKey = 'SCRUM-5'
                     def jiraUrl = 'https://agile-security-test.atlassian.net'
-        
-                    def authorEmail = sh(
-                        script: "git log -1 --pretty=format:'%ae'",
+                    
+                    // Obtiene el nombre de la rama del último merge
+                    def branchName = sh(
+                        script: "git log -1 --pretty=%D | grep -oE 'origin/[a-zA-Z0-9_-]+' | grep -vE '(origin/dev|origin/test|origin/main)' | sed 's|origin/||'",
                         returnStdout: true
                     ).trim()
-        
-                    def comment = "Despliegue en producción completado por ${authorEmail}"
-        
+
+                    // Si la rama tiene un formato como feature/SCRUM-123, extrae el ID de Jira
+                    def issueKey = branchName.replaceAll(/.*\/(SCRUM-\d+).*/, '$1')
+
+                    // Comentario dinámico con el número de la historia
+                    def comment = "Despliegue en producción completado desde la rama ${branchName}."
+
+                    // Validar si issueKey es válido
+                    if (!issueKey.matches(/SCRUM-\d+/)) {
+                        error "No se pudo encontrar un número de historia de Jira válido en la rama: ${branchName}"
+                    }
+
+                    // Enviar el comentario a Jira
                     sh """
                         curl -X POST -u ${JIRA_API_EMAIL}:${JIRA_API_TOKEN} \
                             "${jiraUrl}/rest/api/3/issue/${issueKey}/comment" \
@@ -195,9 +206,11 @@ pipeline {
                                 }
                             }'
                     """
+                    echo "Comentario agregado en Jira para la historia ${issueKey}."
                 }
             }
         }
+    }
 
 
         stage('Paso Final: Detener Spring Boot') {
