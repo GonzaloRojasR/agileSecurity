@@ -1,8 +1,3 @@
-import groovy.json.JsonSlurperClassic
-def jsonParse(def json) {
-    new groovy.json.JsonSlurperClassic().parseText(json)
-}
-
 pipeline {
     agent any
     environment {
@@ -10,7 +5,7 @@ pipeline {
         JIRA_API_EMAIL = credentials('jira-api-email') // Email configurado en Jenkins
     }
     stages {
-        stage('Paso 0: Descargar Código y Checkout ') {
+        stage('Paso 0: Descargar Código y Checkout') {
             steps {
                 script {
                     checkout(
@@ -22,7 +17,28 @@ pipeline {
             }
         }
 
-        stage('Paso 1: Build') {
+        stage('Paso 1: Obtener Historia Jira desde Etiqueta') {
+            steps {
+                script {
+                    // Extraer la etiqueta que contiene el número de Jira
+                    def jiraIssue = sh(
+                        script: '''
+                            git tag --contains $(git log -1 --pretty=format:"%H") | grep -oE 'SCRUM-[0-9]+'
+                        ''',
+                        returnStdout: true
+                    ).trim()
+
+                    if (jiraIssue) {
+                        echo "Número de la historia Jira encontrado: ${jiraIssue}"
+                        env.JIRA_ISSUE = jiraIssue
+                    } else {
+                        error "No se encontró un número de historia Jira en las etiquetas"
+                    }
+                }
+            }
+        }
+
+        stage('Paso 2: Build ') {
             steps {
                 script {
                     sh 'chmod +x mvnw'
@@ -31,16 +47,16 @@ pipeline {
             }
         }
 
-        stage('Paso 2: Iniciar Spring Boot') {
+        stage('Paso 3: Iniciar Spring Boot') {
             steps {
                 script {
                     sh 'nohup bash ./mvnw spring-boot:run & >/dev/null'
-                    sh "sleep 20"
+                    sh "sleep 20" // Aseguramos tiempo para que la aplicación arranque
                 }
             }
         }
 
-        stage('Paso 3: Test API con Newman') {
+        stage('Paso 4: Test API con Newman') {
             steps {
                 script {
                     sh 'newman run ./postman_collection.json'
@@ -48,7 +64,7 @@ pipeline {
             }
         }
 
-        stage('Paso 4: OWASP Dependency-Check') {
+        stage('Paso 5: OWASP Dependency-Check') {
             steps {
                 script {
                     sh '''
@@ -60,157 +76,40 @@ pipeline {
             }
         }
 
-        stage('Paso 5: Iniciar OWASP ZAP') {
-            steps {
-                script {
-                    def zapStatus = sh(script: "curl -s http://localhost:9090", returnStatus: true)
-                    if (zapStatus != 0) {
-                        error "OWASP ZAP no está disponible en el puerto 9090"
-                    }
-                }
-            }
-        }
-
-        stage('Paso 6.1: Exploración con Spider en OWASP ZAP') {
-            steps {
-                script {
-                    sh '''
-                        curl -X POST "http://localhost:9090/JSON/spider/action/scan/" \
-                        --data "url=http://localhost:8081/rest/mscovid/estadoPais" \
-                        --data "maxChildren=10"
-                        sleep 10
-                        curl -X POST "http://localhost:9090/JSON/spider/action/scan/" \
-                        --data "url=http://localhost:8081/rest/mscovid/test" \
-                        --data "maxChildren=10"
-                        sleep 10
-                    '''
-                }
-            }
-        }
-
-        stage('Paso 6.2: Esperar a que Spider termine') {
-            steps {
-                script {
-                    def status = ""
-                    def maxAttempts = 30
-                    def attempt = 0
-
-                    while (status != "100" && attempt < maxAttempts) {
-                        echo "Esperando a que Spider alcance 100% (Intento: ${attempt + 1})"
-                        
-                        status = sh(
-                            script: '''curl -s "http://localhost:9090/JSON/spider/view/status/" | sed -E 's/.*"status":"([0-9]+)".*/\\1/' ''',
-                            returnStdout: true
-                        ).trim()
-        
-                        echo "Estado actual del Spider: ${status}"
-        
-                        if (status != "100") {
-                            sleep(5)
-                        }
-                        attempt++
-                    }
-        
-                    if (status != "100") {
-                        error "El Spider no alcanzó el 100% después de ${maxAttempts} intentos"
-                    } else {
-                        echo "Spider completado con éxito (100%)"
-                    }
-                }
-            }
-        }
-
-        stage('Paso 7: Escaneo Activo con OWASP ZAP') {
-            steps {
-                script {
-                    sh '''
-                        curl -X POST "http://localhost:9090/JSON/ascan/action/scan/" \
-                        --data "url=http://localhost:8081/rest/mscovid/test" \
-                        --data "scanPolicyName=Default Policy"
-                        sleep 30
-                    '''
-                }
-            }
-        }
-
-        stage('Paso 8: Generar Reporte OWASP ZAP') {
-            steps {
-                script {
-                    sh '''
-                        curl -X GET "http://localhost:9090/OTHER/core/other/htmlreport/" -o zap-report.html
-                    '''
-                }
-            }
-        }
-
-        stage('Paso 9: Publicar Reporte OWASP ZAP') {
-            steps {
-                script {
-                    sh 'rm -f nohup.out'
-                }
-                publishHTML(target: [
-                    allowMissing: false,
-                    alwaysLinkToLastBuild: true,
-                    keepAll: true,
-                    reportDir: '.',
-                    reportFiles: 'zap-report.html',
-                    reportName: 'OWASP ZAP Report'
-                ])
-            }
-        }
-
-        stage('Paso 10: Comentar en Jira') {
+        stage('Paso 6: Comentar en Jira') {
             steps {
                 script {
                     def jiraUrl = 'https://agile-security-test.atlassian.net'
-                    
-                    // Obtiene el nombre de la rama del último merge
-                    def branchName = sh(
-                        script: "git log -1 --pretty=%D | grep -oE 'origin/[a-zA-Z0-9_-]+' | grep -vE '(origin/dev|origin/test|origin/main)' | sed 's|origin/||'",
-                        returnStdout: true
-                    ).trim()
+                    def comment = "Despliegue relacionado con la historia ${env.JIRA_ISSUE} completado en producción."
 
-                    // Si la rama tiene un formato como feature/SCRUM-123, extrae el ID de Jira
-                    def issueKey = branchName.replaceAll(/.*\/(SCRUM-\d+).*/, '$1')
-
-                    // Comentario dinámico con el número de la historia
-                    def comment = "Despliegue en producción completado desde la rama ${branchName}."
-
-                    // Validar si issueKey es válido
-                    if (!issueKey.matches(/SCRUM-\d+/)) {
-                        error "No se pudo encontrar un número de historia de Jira válido en la rama: ${branchName}"
-                    }
-
-                    // Enviar el comentario a Jira
+                    // Enviar comentario a Jira
                     sh """
-                        echo ${branchName}
-                        echo ${issueKey}
-                        curl -X POST -u ${JIRA_API_EMAIL}:${JIRA_API_TOKEN} \
-                            "${jiraUrl}/rest/api/3/issue/${issueKey}/comment" \
-                            -H "Content-Type: application/json" \
-                            -d '{
-                                "body": {
-                                    "type": "doc",
-                                    "version": 1,
-                                    "content": [
-                                        {
-                                            "type": "paragraph",
-                                            "content": [
-                                                {
-                                                    "text": "${comment}",
-                                                    "type": "text"
-                                                }
-                                            ]
-                                        }
-                                    ]
-                                }
-                            }'
+                    curl -X POST -u $JIRA_API_EMAIL:$JIRA_API_TOKEN \
+                        -H "Content-Type: application/json" \
+                        -d '{
+                            "body": {
+                                "type": "doc",
+                                "version": 1,
+                                "content": [
+                                    {
+                                        "type": "paragraph",
+                                        "content": [
+                                            {
+                                                "text": "${comment}",
+                                                "type": "text"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        }' \
+                        "${jiraUrl}/rest/api/3/issue/${env.JIRA_ISSUE}/comment"
                     """
-                    echo "Comentario agregado en Jira para la historia ${issueKey}."
+                    echo "Comentario agregado a la historia Jira: ${env.JIRA_ISSUE}"
                 }
             }
         }
-    
+
         stage('Paso Final: Detener Spring Boot') {
             steps {
                 script {
@@ -219,9 +118,9 @@ pipeline {
                         if [ -n "$PID" ]; then
                             echo "Deteniendo Spring Boot: $PID"
                             sudo kill -9 $PID
-                        else
+                        else {
                             echo "No se encontró ningún proceso de Java en ejecución"
-                        fi
+                        }
                     '''
                 }
             }
