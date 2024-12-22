@@ -159,9 +159,14 @@ pipeline {
         stage('Paso Final: Detener Spring Boot') {
             steps {
                 script {
-                    sh '''
-                        echo 'Deteniendo Spring Boot: ' $(pidof java | awk '{print $1}')
-                        kill -9 $(pidof java | awk '{print $1}')
+                    ssh '''
+                        PID=$(pidof java | awk '{print $1}')
+                        if [ -n "$PID" ]; then
+                            echo "Deteniendo Spring Boot: $PID"
+                            sudo kill -9 $PID
+                        else
+                            echo "No se encontró ningún proceso de Java en ejecución"
+                        fi
                     '''
                 }
             }
