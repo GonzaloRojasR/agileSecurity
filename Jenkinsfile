@@ -93,25 +93,25 @@ pipeline {
             steps {
                 script {
                     def status = ""
-                    def maxAttempts = 30  // Número máximo de intentos
+                    def maxAttempts = 30
                     def attempt = 0
 
                     while (status != "100" && attempt < maxAttempts) {
                         echo "Esperando a que Spider alcance 100% (Intento: ${attempt + 1})"
-
+                        
                         status = sh(
-                            script: '''curl -s "http://localhost:9090/JSON/spider/view/status/" | sed -E 's/.*"status":"([0-9]+)".*/\1/' '''
-                            , returnStdout: true
+                            script: '''curl -s "http://localhost:9090/JSON/spider/view/status/" | sed -E 's/.*"status":"([0-9]+)".*/\\1/' ''',
+                            returnStdout: true
                         ).trim()
-
+        
                         echo "Estado actual del Spider: ${status}"
-
+        
                         if (status != "100") {
-                            sleep(5)  // Espera 5 segundos antes de volver a intentar
+                            sleep(5)
                         }
                         attempt++
                     }
-
+        
                     if (status != "100") {
                         error "El Spider no alcanzó el 100% después de ${maxAttempts} intentos"
                     } else {
