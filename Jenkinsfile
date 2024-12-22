@@ -97,7 +97,7 @@ pipeline {
                     def attempt = 0
 
                     while (status != "100" && attempt < maxAttempts) {
-                        echo "Esperando a que Spider alcance 100% (Intento: ${attempt + 1})"
+                        echo "Esperando a que Spider (Intento: ${attempt + 1})"
                         
                         status = sh(
                             script: '''curl -s "http://localhost:9090/JSON/spider/view/status/" | sed -E 's/.*"status":"([0-9]+)".*/\\1/' ''',
@@ -160,24 +160,33 @@ pipeline {
             }
         }
 
-        stage('Obtener Tag de Jira') {
+        stage('Comentar en Jira') {
             steps {
                 script {
-                    // Asegúrate de traer todas las etiquetas remotas
-                    sh "git fetch --tags"
+                    def jiraUrl = 'https://agile-security-test.atlassian.net'
+                    def comment = "Despliegue asociado a la historia ${env.JIRA_TAG}"
         
-                    // Obtener todas las etiquetas que coincidan con el formato SCRUM-#
-                    def jiraTag = sh(
-                        script: '''git tag | grep -oE 'SCRUM-[0-9]+' || echo "NoTag"''',
-                        returnStdout: true
-                    ).trim()
-        
-                    if (jiraTag == "NoTag") {
-                        error "No se encontró ninguna etiqueta con el formato SCRUM-# en el repositorio"
-                    } else {
-                        echo "Etiqueta de Jira detectada: ${jiraTag}"
-                        env.JIRA_TAG = jiraTag // Guardar la etiqueta como variable de entorno
-                    }
+                    sh """
+                        curl -X POST -u $EMAIL:$JIRA_API_TOKEN "${jiraUrl}/rest/api/3/issue/${env.JIRA_TAG}/comment" \
+                            -H "Content-Type: application/json" \
+                            -d '{
+                                  "body": {
+                                    "type": "doc",
+                                    "version": 1,
+                                    "content": [
+                                      {
+                                        "type": "paragraph",
+                                        "content": [
+                                          {
+                                            "text": "${comment}",
+                                            "type": "text"
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  }
+                                }'
+                    """
                 }
             }
         }
