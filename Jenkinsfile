@@ -10,7 +10,7 @@ pipeline {
         JIRA_API_EMAIL = credentials('jira-api-email') // Email configurado en Jenkins
     }
     stages {
-        stage('Paso 0: Descargar Código y Checkout') {
+        stage('Paso 0: Descargar Código y Checkout ') {
             steps {
                 script {
                     checkout(
