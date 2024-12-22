@@ -208,16 +208,6 @@ pipeline {
     post {
         always {
             dependencyCheckPublisher pattern: '**/build/dependency-check-report/dependency-check-report.xml'
-        }
-        success {
-            script {
-                echo "Análisis completado con éxito"
-            }
-        }
-        failure {
-            script {
-                echo "El análisis falló"
-            }
-        }
+        }        
     }
 }
