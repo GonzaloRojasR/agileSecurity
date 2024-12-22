@@ -72,7 +72,11 @@ pipeline {
                 script {
                     sh '''
                         curl -X POST "http://localhost:9090/JSON/spider/action/scan/" \
-                        --data "url=http://localhost:8081" \
+                        --data "url=http://localhost:8081/rest/mscovid/estadoPais" \
+                        --data "maxChildren=10"
+                        sleep 10
+                        curl -X POST "http://localhost:9090/JSON/spider/action/scan/" \
+                        --data "url=http://localhost:8081/rest/mscovid/test" \
                         --data "maxChildren=10"
                         sleep 10
                     '''
