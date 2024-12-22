@@ -159,21 +159,22 @@ pipeline {
             }
         }
 
+        
         stage('Paso 10: Comentar en Jira') {
             steps {
                 script {
                     def issueKey = 'SCRUM-5'
                     def jiraUrl = 'https://agile-security-test.atlassian.net'
-
+        
                     def authorEmail = sh(
                         script: "git log -1 --pretty=format:'%ae'",
                         returnStdout: true
                     ).trim()
-
+        
                     def comment = "Despliegue en producción completado por ${authorEmail}"
-                    
-                    sh '''
-                        curl -X POST -u $JIRA_API_EMAIL:$JIRA_API_TOKEN \
+        
+                    sh """
+                        curl -X POST -u ${JIRA_API_EMAIL}:${JIRA_API_TOKEN} \
                             "${jiraUrl}/rest/api/3/issue/${issueKey}/comment" \
                             -H "Content-Type: application/json" \
                             -d '{
@@ -193,10 +194,11 @@ pipeline {
                                     ]
                                 }
                             }'
-                    '''
+                    """
                 }
             }
         }
+
 
         stage('Paso Final: Detener Spring Boot') {
             steps {
