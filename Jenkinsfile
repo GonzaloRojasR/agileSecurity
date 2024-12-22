@@ -18,7 +18,7 @@ pipeline {
             }
         }
 
-        stage('Paso 1: Build') {
+        stage('Paso 1: Build ') {
             steps {
                 script {
                     sh 'chmod +x mvnw'
