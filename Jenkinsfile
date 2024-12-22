@@ -7,6 +7,7 @@ pipeline {
     agent any
     environment {
         JIRA_API_TOKEN = credentials('jira-api-token') // Token configurado en Jenkins
+        JIRA_API_EMAIL = credentials('jira-api-email') // Email configurado en Jenkins
     }
     stages {
         stage('Paso 0: Descargar Código y Checkout') {
@@ -21,7 +22,7 @@ pipeline {
             }
         }
 
-        stage('Paso 1: Build ') {
+        stage('Paso 1: Build') {
             steps {
                 script {
                     sh 'chmod +x mvnw'
@@ -34,7 +35,7 @@ pipeline {
             steps {
                 script {
                     sh 'nohup bash ./mvnw spring-boot:run & >/dev/null'
-                    sh "sleep 20" // Aseguramos tiempo para que la aplicación arranque
+                    sh "sleep 20"
                 }
             }
         }
@@ -91,9 +92,9 @@ pipeline {
             steps {
                 script {
                     def status = ""
-                    def maxAttempts = 30  // Número máximo de intentos
+                    def maxAttempts = 30
                     def attempt = 0
-        
+
                     while (status != "100" && attempt < maxAttempts) {
                         echo "Esperando a que Spider alcance 100% (Intento: ${attempt + 1})"
                         
@@ -105,7 +106,7 @@ pipeline {
                         echo "Estado actual del Spider: ${status}"
         
                         if (status != "100") {
-                            sleep(5)  // Espera 5 segundos antes de volver a intentar
+                            sleep(5)
                         }
                         attempt++
                     }
@@ -131,7 +132,7 @@ pipeline {
                 }
             }
         }
-      
+
         stage('Paso 8: Generar Reporte OWASP ZAP') {
             steps {
                 script {
@@ -145,7 +146,7 @@ pipeline {
         stage('Paso 9: Publicar Reporte OWASP ZAP') {
             steps {
                 script {
-                    sh 'rm -f nohup.out' // Limpia nohup.out si existe
+                    sh 'rm -f nohup.out'
                 }
                 publishHTML(target: [
                     allowMissing: false,
@@ -161,31 +162,41 @@ pipeline {
         stage('Paso 10: Comentar en Jira') {
             steps {
                 script {
-                    def issueKey = 'SCRUM-5' // Cambia esto por el ID de tu ticket
+                    def issueKey = 'SCRUM-5'
                     def jiraUrl = 'https://agile-security-test.atlassian.net'
-                    def comment = 'Despliegue en producción completado'
+
+                    def authorEmail = sh(
+                        script: "git log -1 --pretty=format:'%ae'",
+                        returnStdout: true
+                    ).trim()
+
+                    def comment = "Despliegue en producción completado por ${authorEmail}"
                     
-                    try {
-                        def response = httpRequest(
-                            url: "${jiraUrl}/rest/api/3/issue/${issueKey}/comment",
-                            httpMode: 'POST',
-                            customHeaders: [
-                                [name: 'Authorization', value: "Bearer ${JIRA_API_TOKEN}"],
-                                [name: 'Content-Type', value: 'application/json']
-                            ],
-                            requestBody: """{
-                                "body": "${comment}"
-                            }"""
-                        )
-                        echo "Comentario agregado en Jira: ${response.content}"
-                    } catch (Exception e) {
-                        echo "Error al comentar en Jira: ${e.message}"
-                        error "No se pudo completar el comentario en Jira"
-                    }
+                    sh '''
+                        curl -X POST -u $JIRA_API_EMAIL:$JIRA_API_TOKEN \
+                            "${jiraUrl}/rest/api/3/issue/${issueKey}/comment" \
+                            -H "Content-Type: application/json" \
+                            -d '{
+                                "body": {
+                                    "type": "doc",
+                                    "version": 1,
+                                    "content": [
+                                        {
+                                            "type": "paragraph",
+                                            "content": [
+                                                {
+                                                    "text": "${comment}",
+                                                    "type": "text"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            }'
+                    '''
                 }
             }
         }
-
 
         stage('Paso Final: Detener Spring Boot') {
             steps {
@@ -205,7 +216,6 @@ pipeline {
     }
     post {
         always {
-            // Publica los reportes de OWASP Dependency-Check
             dependencyCheckPublisher pattern: '**/build/dependency-check-report/dependency-check-report.xml'
         }
     }
