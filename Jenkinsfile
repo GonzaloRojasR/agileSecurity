@@ -8,8 +8,11 @@ pipeline {
     agent any
     environment {
         JIRA_API_TOKEN = credentials('jira-api-token') // Token configurado en Jenkins
-        JIRA_API_EMAIL = credentials('jira-api-email') // Email configurado en Jenkins
-        SONARQUBE_SERVER = 'SonarQubeServerName' // Nombre del servidor SonarQube configurado en Jenkins
+        JIRA_API_EMAIL = credentials('jira-api-email') // Email configurado en Jenkins        
+        SONAR_HOST_URL = 'http://localhost:9000'
+        SONAR_PROJECT_KEY = 'agileSecurity'
+        SONAR_PROJECT_NAME = 'agileSecurity'
+        SONAR_TOKEN = credentials('	sonar-token') // Configura el token en Jenkins Credentials
     }
     stages {
         stage('Paso 0: Descargar Código y Checkout') {
@@ -33,16 +36,17 @@ pipeline {
             }
         }
 
-        stage('Paso 2: Análisis SonarQube') {
+        stage('Paso 2: Análisis SonarQube') {          
             steps {
-                withSonarQubeEnv('SonarQubeServerName') { // Configuración del servidor
-                    script {
-                        sh '''
-                            ./mvnw sonar:sonar \
-                                -Dsonar.projectKey=agileSecurity \
-                                -Dsonar.host.url=$SONAR_HOST_URL \
-                                -Dsonar.login=$SONAR_AUTH_TOKEN
-                        '''
+                script {
+                    withSonarQubeEnv('SonarQube') {
+                        sh """
+                        ./mvnw sonar:sonar \
+                        -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
+                        -Dsonar.projectName=${SONAR_PROJECT_NAME} \
+                        -Dsonar.host.url=${SONAR_HOST_URL} \
+                        -Dsonar.login=${env.SONAR_TOKEN}
+                        """
                     }
                 }
             }
@@ -202,6 +206,16 @@ pipeline {
     post {
         always {
             dependencyCheckPublisher pattern: '**/build/dependency-check-report/dependency-check-report.xml'
+        }
+        success {
+            script {
+                echo "Análisis completado con éxito"
+            }
+        }
+        failure {
+            script {
+                echo "El análisis falló"
+            }
         }
     }
 }
