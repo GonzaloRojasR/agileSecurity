@@ -79,6 +79,20 @@ pipeline {
                 }
             }
         }
+
+        
+        stage('Paso 7: Escaneo Activo con OWASP ZAP') {
+            steps {
+                script {
+                    sh '''
+                        curl -X POST "http://localhost:9090/JSON/ascan/action/scan/" \
+                        --data "url=http://localhost:8081" \
+                        --data "scanPolicyName=Default Policy"
+                        sleep 30
+                    '''
+                }
+            }
+        }
       
         stage('Paso 8: Generar Reporte OWASP ZAP') {
             steps {
