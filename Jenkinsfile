@@ -9,6 +9,7 @@ pipeline {
     environment {
         JIRA_API_TOKEN = credentials('jira-api-token') // Token configurado en Jenkins
         JIRA_API_EMAIL = credentials('jira-api-email') // Email configurado en Jenkins
+        SONARQUBE_SERVER = 'SonarQubeServerName' // Nombre del servidor SonarQube configurado en Jenkins
     }
     stages {
         stage('Paso 0: Descargar Código y Checkout') {
@@ -32,7 +33,30 @@ pipeline {
             }
         }
 
-        stage('Paso 2: Iniciar Spring Boot') {
+        stage('Paso 2: Análisis SonarQube') {
+            steps {
+                withSonarQubeEnv('SonarQubeServerName') { // Configuración del servidor
+                    script {
+                        sh '''
+                            ./mvnw sonar:sonar \
+                                -Dsonar.projectKey=agileSecurity \
+                                -Dsonar.host.url=$SONAR_HOST_URL \
+                                -Dsonar.login=$SONAR_AUTH_TOKEN
+                        '''
+                    }
+                }
+            }
+        }
+
+        stage('Paso 3: Esperar Quality Gate de SonarQube') {
+            steps {
+                timeout(time: 5, unit: 'MINUTES') { // Configuración de tiempo máximo para Quality Gate
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
+
+        stage('Paso 4: Iniciar Spring Boot') {
             steps {
                 script {
                     sh 'nohup bash ./mvnw spring-boot:run & >/dev/null'
@@ -41,7 +65,7 @@ pipeline {
             }
         }
 
-        stage('Paso 3: Test API con Newman') {
+        stage('Paso 5: Test API con Newman') {
             steps {
                 script {
                     sh 'newman run ./postman_collection.json'
@@ -49,7 +73,7 @@ pipeline {
             }
         }
 
-        stage('Paso 4: OWASP Dependency-Check') {
+        stage('Paso 6: OWASP Dependency-Check') {
             steps {
                 script {
                     sh '''
@@ -61,7 +85,7 @@ pipeline {
             }
         }
 
-        stage('Paso 5: Iniciar OWASP ZAP') {
+        stage('Paso 7: Iniciar OWASP ZAP') {
             steps {
                 script {
                     def zapStatus = sh(script: "curl -s http://localhost:9090", returnStatus: true)
@@ -72,7 +96,7 @@ pipeline {
             }
         }
 
-        stage('Paso 6.1: Exploración con Spider en OWASP ZAP') {
+        stage('Paso 8: Exploración con Spider en OWASP ZAP') {
             steps {
                 script {
                     sh '''
@@ -80,61 +104,12 @@ pipeline {
                         --data "url=http://localhost:8081/rest/mscovid/estadoPais" \
                         --data "maxChildren=10"
                         sleep 10
-                        curl -X POST "http://localhost:9090/JSON/spider/action/scan/" \
-                        --data "url=http://localhost:8081/rest/mscovid/test" \
-                        --data "maxChildren=10"
-                        sleep 10
                     '''
                 }
             }
         }
 
-        stage('Paso 6.2: Esperar a que Spider termine') {
-            steps {
-                script {
-                    def status = ""
-                    def maxAttempts = 30
-                    def attempt = 0
-
-                    while (status != "100" && attempt < maxAttempts) {
-                        echo "Esperando a que Spider (Intento: ${attempt + 1})"
-                        
-                        status = sh(
-                            script: '''curl -s "http://localhost:9090/JSON/spider/view/status/" | sed -E 's/.*"status":"([0-9]+)".*/\\1/' ''',
-                            returnStdout: true
-                        ).trim()
-        
-                        echo "Estado actual del Spider: ${status}"
-        
-                        if (status != "100") {
-                            sleep(5)
-                        }
-                        attempt++
-                    }
-        
-                    if (status != "100") {
-                        error "El Spider no alcanzó el 100% después de ${maxAttempts} intentos"
-                    } else {
-                        echo "Spider completado con éxito (100%)"
-                    }
-                }
-            }
-        }
-
-        stage('Paso 7: Escaneo Activo con OWASP ZAP') {
-            steps {
-                script {
-                    sh '''
-                        curl -X POST "http://localhost:9090/JSON/ascan/action/scan/" \
-                        --data "url=http://localhost:8081/rest/mscovid/test" \
-                        --data "scanPolicyName=Default Policy"
-                        sleep 30
-                    '''
-                }
-            }
-        }
-
-        stage('Paso 8: Generar Reporte OWASP ZAP') {
+        stage('Paso 9: Generar Reporte OWASP ZAP') {
             steps {
                 script {
                     sh '''
@@ -144,7 +119,7 @@ pipeline {
             }
         }
 
-        stage('Paso 9: Publicar Reporte OWASP ZAP') {
+        stage('Paso 10: Publicar Reporte OWASP ZAP') {
             steps {
                 script {
                     sh 'rm -f nohup.out' // Limpia nohup.out si existe
@@ -160,23 +135,19 @@ pipeline {
             }
         }
 
-         stage('Obtener Tag de Jira') {
+        stage('Obtener Tag de Jira') {
             steps {
                 script {
-                    // Asegúrate de traer todas las etiquetas del repositorio remoto
                     sh "git fetch --tags"
-        
-                    // Obtener todas las etiquetas que coincidan con el formato SCRUM-#
                     def jiraTag = sh(
                         script: '''git tag | grep -oE 'SCRUM-[0-9]+' || echo "NoTag"''',
                         returnStdout: true
                     ).trim()
-        
                     if (jiraTag == "NoTag") {
                         error "No se encontró ninguna etiqueta con el formato SCRUM-# en el repositorio"
                     } else {
                         echo "Etiqueta de Jira detectada: ${jiraTag}"
-                        env.JIRA_TAG = jiraTag // Guardar la etiqueta como variable de entorno
+                        env.JIRA_TAG = jiraTag
                     }
                 }
             }
@@ -187,7 +158,6 @@ pipeline {
                 script {
                     def jiraUrl = 'https://agile-security-test.atlassian.net'
                     def comment = "Despliegue asociado a la historia ${env.JIRA_TAG}"
-        
                     sh """
                         curl -X POST -u $JIRA_API_EMAIL:$JIRA_API_TOKEN "${jiraUrl}/rest/api/3/issue/${env.JIRA_TAG}/comment" \
                             -H "Content-Type: application/json" \
@@ -212,7 +182,6 @@ pipeline {
                 }
             }
         }
-
 
         stage('Paso Final: Detener Spring Boot') {
             steps {
