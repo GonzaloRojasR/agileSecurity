@@ -5,6 +5,9 @@ def jsonParse(def json) {
 
 pipeline {
     agent any
+    environment {
+        JIRA_API_TOKEN = credentials('jira-api-token') // Token configurado en Jenkins
+    }
     stages {
         stage('Paso 0: Descargar Código y Checkout') {
             steps {
@@ -116,7 +119,6 @@ pipeline {
             }
         }
 
-        
         stage('Paso 7: Escaneo Activo con OWASP ZAP') {
             steps {
                 script {
@@ -156,10 +158,32 @@ pipeline {
             }
         }
 
+        stage('Paso 10: Comentar en Jira') {
+            steps {
+                script {
+                    def issueKey = 'SCRUM-5' // Cambia esto por el ID de tu ticket
+                    def jiraUrl = 'https://agile-security-test.atlassian.net'
+                    def comment = 'Despliegue en producción completado'
+                    
+                    httpRequest(
+                        url: "${jiraUrl}/rest/api/3/issue/${issueKey}/comment",
+                        httpMode: 'POST',
+                        customHeaders: [
+                            [name: 'Authorization', value: "Bearer ${JIRA_API_TOKEN}"],
+                            [name: 'Content-Type', value: 'application/json']
+                        ],
+                        requestBody: """{
+                            "body": "${comment}"
+                        }"""
+                    )
+                }
+            }
+        }
+
         stage('Paso Final: Detener Spring Boot') {
             steps {
                 script {
-                    ssh '''
+                    sh '''
                         PID=$(pidof java | awk '{print $1}')
                         if [ -n "$PID" ]; then
                             echo "Deteniendo Spring Boot: $PID"
