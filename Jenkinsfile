@@ -160,33 +160,24 @@ pipeline {
             }
         }
 
-        stage('Comentar en Jira') {
+         stage('Obtener Tag de Jira') {
             steps {
                 script {
-                    def jiraUrl = 'https://agile-security-test.atlassian.net'
-                    def comment = "Despliegue asociado a la historia ${env.JIRA_TAG}"
+                    // Asegúrate de traer todas las etiquetas del repositorio remoto
+                    sh "git fetch --tags"
         
-                    sh """
-                        curl -X POST -u $EMAIL:$JIRA_API_TOKEN "${jiraUrl}/rest/api/3/issue/${env.JIRA_TAG}/comment" \
-                            -H "Content-Type: application/json" \
-                            -d '{
-                                  "body": {
-                                    "type": "doc",
-                                    "version": 1,
-                                    "content": [
-                                      {
-                                        "type": "paragraph",
-                                        "content": [
-                                          {
-                                            "text": "${comment}",
-                                            "type": "text"
-                                          }
-                                        ]
-                                      }
-                                    ]
-                                  }
-                                }'
-                    """
+                    // Obtener todas las etiquetas que coincidan con el formato SCRUM-#
+                    def jiraTag = sh(
+                        script: '''git tag | grep -oE 'SCRUM-[0-9]+' || echo "NoTag"''',
+                        returnStdout: true
+                    ).trim()
+        
+                    if (jiraTag == "NoTag") {
+                        error "No se encontró ninguna etiqueta con el formato SCRUM-# en el repositorio"
+                    } else {
+                        echo "Etiqueta de Jira detectada: ${jiraTag}"
+                        env.JIRA_TAG = jiraTag // Guardar la etiqueta como variable de entorno
+                    }
                 }
             }
         }
@@ -221,6 +212,7 @@ pipeline {
                 }
             }
         }
+
 
         stage('Paso Final: Detener Spring Boot') {
             steps {
