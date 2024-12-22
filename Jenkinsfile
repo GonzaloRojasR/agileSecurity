@@ -67,18 +67,34 @@ pipeline {
             }
         }
 
-        stage('Paso 6: Exploración con Spider en OWASP ZAP') {
+        stage('Paso 6: Esperar a que Spider termine') {
             steps {
                 script {
-                    sh '''
-                        curl -X POST "http://localhost:9090/JSON/spider/action/scan/" \
-                        --data "url=http://localhost:8081" \
-                        --data "maxChildren=10"
-                        sleep 10
-                    '''
+                    def status = ""
+                    def maxAttempts = 30  // Número máximo de intentos
+                    def attempt = 0
+        
+                    while (status != "100" && attempt < maxAttempts) {
+                        echo "Esperando a que Spider alcance 100% (Intento: ${attempt + 1})"
+                        status = sh(
+                            script: 'curl -s "http://localhost:9090/JSON/spider/view/status/" | jq -r .status',
+                            returnStdout: true
+                        ).trim()
+                        if (status != "100") {
+                            sleep(5)  // Espera 5 segundos antes de volver a intentar
+                        }
+                        attempt++
+                    }
+        
+                    if (status != "100") {
+                        error "El Spider no alcanzó el 100% después de ${maxAttempts} intentos"
+                    } else {
+                        echo "Spider completado con éxito (100%)"
+                    }
                 }
             }
         }
+
 
         
         stage('Paso 7: Escaneo Activo con OWASP ZAP') {
