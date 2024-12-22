@@ -165,20 +165,27 @@ pipeline {
                     def jiraUrl = 'https://agile-security-test.atlassian.net'
                     def comment = 'Despliegue en producción completado'
                     
-                    httpRequest(
-                        url: "${jiraUrl}/rest/api/3/issue/${issueKey}/comment",
-                        httpMode: 'POST',
-                        customHeaders: [
-                            [name: 'Authorization', value: "Bearer ${JIRA_API_TOKEN}"],
-                            [name: 'Content-Type', value: 'application/json']
-                        ],
-                        requestBody: """{
-                            "body": "${comment}"
-                        }"""
-                    )
+                    try {
+                        def response = httpRequest(
+                            url: "${jiraUrl}/rest/api/3/issue/${issueKey}/comment",
+                            httpMode: 'POST',
+                            customHeaders: [
+                                [name: 'Authorization', value: "Bearer ${JIRA_API_TOKEN}"],
+                                [name: 'Content-Type', value: 'application/json']
+                            ],
+                            requestBody: """{
+                                "body": "${comment}"
+                            }"""
+                        )
+                        echo "Comentario agregado en Jira: ${response.content}"
+                    } catch (Exception e) {
+                        echo "Error al comentar en Jira: ${e.message}"
+                        error "No se pudo completar el comentario en Jira"
+                    }
                 }
             }
         }
+
 
         stage('Paso Final: Detener Spring Boot') {
             steps {
