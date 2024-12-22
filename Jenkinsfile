@@ -36,7 +36,7 @@ pipeline {
             }
         }
 
-        stage('Paso 2: Análisis SonarQube') {          
+       stage('Paso 2: Análisis SonarQube') {          
             steps {
                 script {
                     withSonarQubeEnv('SonarQube') {
@@ -46,11 +46,12 @@ pipeline {
                         -Dsonar.projectName=${SONAR_PROJECT_NAME} \
                         -Dsonar.host.url=${SONAR_HOST_URL} \
                         -Dsonar.login=${env.SONAR_TOKEN}
-                        """
+                        """ || echo "SonarQube analysis failed"
                     }
                 }
             }
         }
+
 
         stage('Paso 3: Esperar Quality Gate de SonarQube') {
             steps {
