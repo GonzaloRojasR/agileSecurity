@@ -189,7 +189,7 @@ pipeline {
                     def comment = "Despliegue asociado a la historia ${env.JIRA_TAG}"
         
                     sh """
-                        curl -X POST -u $EMAIL:$JIRA_API_TOKEN "${jiraUrl}/rest/api/3/issue/${env.JIRA_TAG}/comment" \
+                        curl -X POST -u $JIRA_API_EMAIL:$JIRA_API_TOKEN "${jiraUrl}/rest/api/3/issue/${env.JIRA_TAG}/comment" \
                             -H "Content-Type: application/json" \
                             -d '{
                                   "body": {
