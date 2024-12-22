@@ -77,7 +77,7 @@ pipeline {
                     while (status != "100" && attempt < maxAttempts) {
                         echo "Esperando a que Spider alcance 100% (Intento: ${attempt + 1})"
                         status = sh(
-                            script: 'curl -s "http://localhost:9090/JSON/spider/view/status/" | jq -r .status',
+                            script: 'curl -X POST "http://localhost:9090/JSON/spider/action/scan/" --data "url=http://localhost:8081" --data "maxChildren=10" | jq -r .status',
                             returnStdout: true
                         ).trim()
                         if (status != "100") {
