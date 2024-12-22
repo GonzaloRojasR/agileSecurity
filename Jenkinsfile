@@ -160,6 +160,28 @@ pipeline {
             }
         }
 
+         stage('Obtener Tag de Jira') {
+            steps {
+                script {
+                    // Asegúrate de traer todas las etiquetas remotas
+                    sh "git fetch --tags"
+        
+                    // Intentar obtener el tag asociado al último commit
+                    def jiraTag = sh(
+                        script: '''git tag --contains $(git rev-parse HEAD) | grep -oE 'SCRUM-[0-9]+' || echo "NoTag"''',
+                        returnStdout: true
+                    ).trim()
+        
+                    if (jiraTag == "NoTag") {
+                        error "No se encontró ninguna etiqueta asociada al último commit"
+                    } else {
+                        echo "Etiqueta de Jira detectada: ${jiraTag}"
+                        env.JIRA_TAG = jiraTag // Guardar la etiqueta como variable de entorno
+                    }
+                }
+            }
+        }
+        
         stage('Paso 10: Comentar en Jira') {
             steps {
                 script {
