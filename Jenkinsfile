@@ -15,6 +15,7 @@ pipeline {
         SONAR_TOKEN = credentials('sonar-token') // Configura el token en Jenkins Credentials
         BRANCH_NAME = env.BRANCH_NAME // Automáticamente proporcionado en un Multibranch Pipeline
     }
+    // prueba
     stages {
         stage('Debug Branch Name') {
             steps {
