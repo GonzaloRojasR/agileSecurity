@@ -1,9 +1,3 @@
-import groovy.json.JsonSlurperClassic
-
-def jsonParse(def json) {
-    new groovy.json.JsonSlurperClassic().parseText(json)
-}
-
 pipeline {
     agent any
     environment {
@@ -13,18 +7,19 @@ pipeline {
         SONAR_PROJECT_KEY = 'agileSecurity'
         SONAR_PROJECT_NAME = 'agileSecurity'
         SONAR_TOKEN = credentials('sonar-token') // Configura el token en Jenkins Credentials
-        BRANCH_NAME = env.BRANCH_NAME ?: 'dev'
     }
     stages {
+
+        stage('Debug Branch Name') {
+            steps {
+                echo "Branch name detected: ${env.BRANCH_NAME}"
+            }
+        }
         // para disparar pipe
         stage('Descargar Código y Checkout') {
             steps {
                 script {
-                    checkout([
-                        $class: 'GitSCM',
-                        branches: [[name: "${BRANCH_NAME}"]],
-                        userRemoteConfigs: [[url: 'https://github.com/GonzaloRojasR/agileSecurity.git']]
-                    ])
+                    checkout scm // Multibranch Pipeline automáticamente usa el SCM configurado
                 }
             }
         }
@@ -53,7 +48,7 @@ pipeline {
 
         stage('Análisis SonarQube') {
             when {
-                expression { BRANCH_NAME != 'main' && BRANCH_NAME != 'test' } // Solo dev
+                expression { env.BRANCH_NAME != 'main' && env.BRANCH_NAME != 'test' } // Solo dev
             }
             steps {
                 script {
@@ -74,7 +69,7 @@ pipeline {
 
         stage('OWASP Dependency-Check') {
             when {
-                expression { BRANCH_NAME != 'main' && BRANCH_NAME != 'test' } // Solo dev
+                expression { env.BRANCH_NAME != 'main' && env.BRANCH_NAME != 'test' } // Solo dev
             }
             steps {
                 script {
@@ -91,7 +86,7 @@ pipeline {
 
         stage('Test API con Newman') {
             when {
-                expression { BRANCH_NAME == 'test' } // Solo test
+                expression { env.BRANCH_NAME == 'test' } // Solo test
             }
             steps {
                 script {
@@ -104,7 +99,7 @@ pipeline {
 
         stage('OWASP ZAP') {
             when {
-                expression { BRANCH_NAME == 'test' } // Solo test
+                expression { env.BRANCH_NAME == 'test' } // Solo test
             }
             stages {
                 stage('Iniciar OWASP ZAP') {
@@ -130,21 +125,31 @@ pipeline {
                                     --data "url=http://localhost:8081/rest/mscovid/estadoPais" \
                                     --data "maxChildren=10"
                                     sleep 10
+                                    curl -X POST "http://localhost:9090/JSON/spider/action/scan/" \
+                                    --data "url=http://localhost:8081/rest/mscovid/test" \
+                                    --data "maxChildren=10"
+                                    sleep 10
                                 '''
                             }
                         }
                     }
                 }
 
-                stage('Generar Reporte ZAP') {
+                stage('Publicar Reporte OWASP ZAP') {
                     steps {
-                        script {
-                            catchError(buildResult: 'UNSTABLE', stageResult: 'UNSTABLE') {
+                        script {                            
                                 sh '''
                                     curl -X GET "http://localhost:9090/OTHER/core/other/htmlreport/" -o zap-report.html
-                                '''
-                            }
+                                '''                            
                         }
+                        publishHTML(target: [
+                            allowMissing: false,
+                            alwaysLinkToLastBuild: true,
+                            keepAll: true,
+                            reportDir: '.',
+                            reportFiles: 'zap-report.html',
+                            reportName: 'OWASP ZAP Report'
+                        ])
                     }
                 }
             }
@@ -155,7 +160,7 @@ pipeline {
                 script {
                     catchError(buildResult: 'UNSTABLE', stageResult: 'UNSTABLE') {
                         def jiraUrl = 'https://agile-security-test.atlassian.net'
-                        def comment = "Despliegue en rama: ${BRANCH_NAME}"
+                        def comment = "Despliegue en rama: ${env.BRANCH_NAME}"
                         sh """
                             curl -X POST -u $JIRA_API_EMAIL:$JIRA_API_TOKEN "${jiraUrl}/rest/api/3/issue/SCRUM-123/comment" \
                                 -H "Content-Type: application/json" \
@@ -184,7 +189,7 @@ pipeline {
 
         stage('Detener Spring Boot') {
             when {
-                expression { BRANCH_NAME != 'main' } // Dev y Test
+                expression { env.BRANCH_NAME != 'main' } // Dev y Test
             }
             steps {
                 script {
@@ -219,4 +224,3 @@ pipeline {
         }
     }
 }
-
