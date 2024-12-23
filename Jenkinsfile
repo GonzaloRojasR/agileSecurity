@@ -154,34 +154,50 @@ pipeline {
             }
         }
 
+        stage('Obtener Tag de Jira') {
+            steps {
+                script {
+                    sh "git fetch --tags"
+                    def jiraTag = sh(
+                        script: '''git tag | grep -oE 'SCRUM-[0-9]+' || echo "NoTag"''',
+                        returnStdout: true
+                    ).trim()
+                    if (jiraTag == "NoTag") {
+                        error "No se encontró ninguna etiqueta con el formato SCRUM-# en el repositorio"
+                    } else {
+                        echo "Etiqueta de Jira detectada: ${jiraTag}"
+                        env.JIRA_TAG = jiraTag
+                    }
+                }
+            }
+        }
+        
         stage('Comentar en Jira') {
             steps {
                 script {
-                    catchError(buildResult: 'UNSTABLE', stageResult: 'UNSTABLE') {
-                        def jiraUrl = 'https://agile-security-test.atlassian.net'
-                        def comment = "Despliegue en rama: ${env.BRANCH_NAME}"
-                        sh """
-                            curl -X POST -u $JIRA_API_EMAIL:$JIRA_API_TOKEN "${jiraUrl}/rest/api/3/issue/SCRUM-123/comment" \
-                                -H "Content-Type: application/json" \
-                                -d '{
-                                      "body": {
-                                        "type": "doc",
-                                        "version": 1,
+                    def jiraUrl = 'https://agile-security-test.atlassian.net'
+                    def comment = "Despliegue asociado a la historia ${env.JIRA_TAG}"
+                    sh """
+                        curl -X POST -u $JIRA_API_EMAIL:$JIRA_API_TOKEN "${jiraUrl}/rest/api/3/issue/${env.JIRA_TAG}/comment" \
+                            -H "Content-Type: application/json" \
+                            -d '{
+                                  "body": {
+                                    "type": "doc",
+                                    "version": 1,
+                                    "content": [
+                                      {
+                                        "type": "paragraph",
                                         "content": [
                                           {
-                                            "type": "paragraph",
-                                            "content": [
-                                              {
-                                                "text": "${comment}",
-                                                "type": "text"
-                                              }
-                                            ]
+                                            "text": "${comment}",
+                                            "type": "text"
                                           }
                                         ]
                                       }
-                                    }'
-                        """
-                    }
+                                    ]
+                                  }
+                                }'
+                    """
                 }
             }
         }
