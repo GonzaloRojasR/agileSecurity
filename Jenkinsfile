@@ -9,7 +9,7 @@ pipeline {
         SONAR_TOKEN = credentials('sonar-token') // Configura el token en Jenkins Credentials
     }
     stages {
-        // Actualizacion de jenkinsfile
+        // Actualizacion de jenkinsfile 2
         stage('Debug Branch Name') {
             steps {
                 echo "Branch name detected: ${env.BRANCH_NAME}"
