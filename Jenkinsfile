@@ -150,6 +150,7 @@ pipeline {
                             reportFiles: 'zap-report.html',
                             reportName: 'OWASP ZAP Report'
                         ])
+                    }
                 }
             }
         }
