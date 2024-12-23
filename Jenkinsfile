@@ -125,19 +125,31 @@ pipeline {
                                     --data "url=http://localhost:8081/rest/mscovid/estadoPais" \
                                     --data "maxChildren=10"
                                     sleep 10
+                                    curl -X POST "http://localhost:9090/JSON/spider/action/scan/" \
+                                    --data "url=http://localhost:8081/rest/mscovid/test" \
+                                    --data "maxChildren=10"
+                                    sleep 10
                                 '''
                             }
                         }
                     }
                 }
 
-                stage('Generar Reporte ZAP') {
+                stage('Publicar Reporte OWASP ZAP') {
                     steps {
                         script {                            
                                 sh '''
                                     curl -X GET "http://localhost:9090/OTHER/core/other/htmlreport/" -o zap-report.html
                                 '''                            
                         }
+                        publishHTML(target: [
+                            allowMissing: false,
+                            alwaysLinkToLastBuild: true,
+                            keepAll: true,
+                            reportDir: '.',
+                            reportFiles: 'zap-report.html',
+                            reportName: 'OWASP ZAP Report'
+                        ])
                     }
                 }
             }
