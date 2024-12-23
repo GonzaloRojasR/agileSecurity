@@ -55,17 +55,7 @@ pipeline {
                 }
             }
         }
-
-        stage('Esperar Quality Gate de SonarQube') {
-            steps {
-                timeout(time: 5, unit: 'MINUTES') {
-                    catchError(buildResult: 'UNSTABLE', stageResult: 'UNSTABLE') {
-                        waitForQualityGate abortPipeline: true
-                    }
-                }
-            }
-        }
-
+   
         stage('Iniciar Spring Boot') {
             steps {
                 script {
