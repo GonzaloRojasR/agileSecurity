@@ -134,6 +134,37 @@ pipeline {
                     }
                 }
 
+                stage('Exploración con Spider') {
+                    steps {
+                        script {
+                            // Realiza el escaneo Spider
+                            sh '''
+                                    curl -X POST "http://localhost:9090/JSON/spider/action/scan/" \
+                                    --data "url=http://localhost:8081/rest/mscovid/estadoPais" \
+                                    --data "maxChildren=10"
+                                    sleep 2
+                                    curl -X POST "http://localhost:9090/JSON/spider/action/scan/" \
+                                    --data "url=http://localhost:8081/rest/mscovid/test" \
+                                    --data "maxChildren=10"
+                                '''        
+                            // Espera el estado 100 antes de continuar
+                            def scanComplete = false
+                            while (!scanComplete) {
+                                def status = sh(
+                                    script: "curl -s ${ZAP_URL}/JSON/spider/view/status/?apikey=${ZAP_API_KEY} | jq -r '.status'",
+                                    returnStdout: true
+                                ).trim()
+                                echo "Estado del escaneo Spider: ${status}%"
+                                if (status == '100') {
+                                    scanComplete = true
+                                } else {
+                                    sleep 5 // Espera 5 segundos antes de volver a consultar
+                                }
+                            }
+                        }
+                    }
+                }
+
                 stage('Publicar Reporte OWASP ZAP') {
                     steps {
                         script {                            
