@@ -188,7 +188,7 @@ pipeline {
             steps {
                 script {
                     def jiraUrl = 'https://agile-security-test.atlassian.net'
-                    def comment = "Despliegue asociado a la historia ${env.JIRA_TAG}"
+                    def comment = "[MENSAJE AUTOMATICO] Despliegue realizado en ambiente ${env.BRANCH_NAME}"
                     sh """
                         curl -X POST -u $JIRA_API_EMAIL:$JIRA_API_TOKEN "${jiraUrl}/rest/api/3/issue/${env.JIRA_TAG}/comment" \
                             -H "Content-Type: application/json" \
