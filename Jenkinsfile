@@ -16,7 +16,7 @@ pipeline {
         BRANCH_NAME = env.BRANCH_NAME ?: 'dev'
     }
     stages {
-        stage('Descargar Código y Checkout') {
+        stage('Descargar Código y Checkout ') {
             steps {
                 script {
                     checkout([
