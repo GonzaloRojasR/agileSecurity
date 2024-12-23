@@ -13,23 +13,19 @@ pipeline {
         SONAR_PROJECT_KEY = 'agileSecurity'
         SONAR_PROJECT_NAME = 'agileSecurity'
         SONAR_TOKEN = credentials('sonar-token') // Configura el token en Jenkins Credentials
-        BRANCH_NAME = env.BRANCH_NAME ?: 'dev'
+        BRANCH_NAME = env.BRANCH_NAME // Automáticamente proporcionado en un Multibranch Pipeline
     }
     stages {
-        // para disparar pipe
-         stage('Debug Branch Name') {
+        stage('Debug Branch Name') {
             steps {
-                echo "Branch name detected: ${env.BRANCH_NAME}"
+                echo "Branch name detected: ${BRANCH_NAME}"
             }
         }
+
         stage('Descargar Código y Checkout') {
             steps {
                 script {
-                    checkout([
-                        $class: 'GitSCM',
-                        branches: [[name: "${BRANCH_NAME}"]],
-                        userRemoteConfigs: [[url: 'https://github.com/GonzaloRojasR/agileSecurity.git']]
-                    ])
+                    checkout scm // Utiliza el scm configurado automáticamente en Multibranch Pipeline
                 }
             }
         }
@@ -224,4 +220,3 @@ pipeline {
         }
     }
 }
-
