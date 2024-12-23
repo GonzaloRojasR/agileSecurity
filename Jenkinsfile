@@ -15,7 +15,6 @@ pipeline {
                 echo "Branch name detected: ${env.BRANCH_NAME}"
             }
         }
-        // Cambio de prueba asdf
         stage('Descargar Código y Checkout') {
             steps {
                 script {
