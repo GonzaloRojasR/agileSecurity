@@ -15,7 +15,6 @@ pipeline {
                 echo "Branch name detected: ${env.BRANCH_NAME}"
             }
         }
-        // para disparar pipe
         stage('Descargar Código y Checkout') {
             steps {
                 script {
@@ -212,7 +211,7 @@ pipeline {
     post {
         always {
             script {
-                if (env.BRANCH_NAME == 'test') {
+                if (env.BRANCH_NAME == 'dev') {
                     dependencyCheckPublisher pattern: '**/build/dependency-check-report/dependency-check-report.xml'
                 } else {
                     echo "Skipping Dependency Check Publisher for branch: ${env.BRANCH_NAME}"
