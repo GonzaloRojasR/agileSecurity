@@ -133,12 +133,10 @@ pipeline {
 
                 stage('Generar Reporte ZAP') {
                     steps {
-                        script {
-                            catchError(buildResult: 'UNSTABLE', stageResult: 'UNSTABLE') {
+                        script {                            
                                 sh '''
                                     curl -X GET "http://localhost:9090/OTHER/core/other/htmlreport/" -o zap-report.html
-                                '''
-                            }
+                                '''                            
                         }
                     }
                 }
