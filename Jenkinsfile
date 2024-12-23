@@ -17,6 +17,11 @@ pipeline {
     }
     stages {
         // para disparar pipe
+         stage('Debug Branch Name') {
+            steps {
+                echo "Branch name detected: ${env.BRANCH_NAME}"
+            }
+        }
         stage('Descargar Código y Checkout') {
             steps {
                 script {
