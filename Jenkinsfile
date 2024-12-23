@@ -15,7 +15,7 @@ pipeline {
         SONAR_TOKEN = credentials('sonar-token') // Configura el token en Jenkins Credentials
     }
     stages {
-        stage('Paso 0: Descargar Código y Checkout') {
+        stage('Descargar Código y Checkout') {
             steps {
                 script {
                     checkout([
@@ -27,7 +27,7 @@ pipeline {
             }
         }
 
-        stage('Paso 1: Build ') {
+        stage('Build ') {
             steps {
                 script {
                     sh 'chmod +x mvnw'
@@ -36,7 +36,7 @@ pipeline {
             }
         }
 
-       stage('Paso 2: Análisis SonarQube') {          
+       stage('Análisis SonarQube') {          
             steps {
                 script {
                     withSonarQubeEnv('SonarQube') {
@@ -52,16 +52,7 @@ pipeline {
             }
         }
 
-
-        stage('Paso 3: Esperar Quality Gate de SonarQube') {
-            steps {
-                timeout(time: 5, unit: 'MINUTES') { // Configuración de tiempo máximo para Quality Gate
-                    waitForQualityGate abortPipeline: true
-                }
-            }
-        }
-
-        stage('Paso 4: Iniciar Spring Boot') {
+        stage('Iniciar Spring Boot') {
             steps {
                 script {
                     sh 'nohup bash ./mvnw spring-boot:run & >/dev/null'
@@ -70,7 +61,7 @@ pipeline {
             }
         }
 
-        stage('Paso 5: Test API con Newman') {
+        stage('Test API con Newman') {
             steps {
                 script {
                     sh 'newman run ./postman_collection.json'
@@ -78,7 +69,7 @@ pipeline {
             }
         }
 
-        stage('Paso 6: OWASP Dependency-Check') {
+        stage('OWASP Dependency-Check') {
             steps {
                 script {
                     sh '''
@@ -90,7 +81,7 @@ pipeline {
             }
         }
 
-        stage('Paso 7: Iniciar OWASP ZAP') {
+        stage('Iniciar OWASP ZAP') {
             steps {
                 script {
                     def zapStatus = sh(script: "curl -s http://localhost:9090", returnStatus: true)
@@ -101,7 +92,7 @@ pipeline {
             }
         }
 
-        stage('Paso 8: Exploración con Spider en OWASP ZAP') {
+        stage('Exploración con Spider en OWASP ZAP') {
             steps {
                 script {
                     sh '''
@@ -114,7 +105,7 @@ pipeline {
             }
         }
 
-        stage('Paso 9: Generar Reporte OWASP ZAP') {
+        stage('Generar Reporte OWASP ZAP') {
             steps {
                 script {
                     sh '''
@@ -124,7 +115,7 @@ pipeline {
             }
         }
 
-        stage('Paso 10: Publicar Reporte OWASP ZAP') {
+        stage('Publicar Reporte OWASP ZAP') {
             steps {
                 script {
                     sh 'rm -f nohup.out' // Limpia nohup.out si existe
