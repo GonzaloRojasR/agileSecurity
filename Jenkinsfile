@@ -6,7 +6,7 @@ pipeline {
         SONAR_HOST_URL = 'http://localhost:9000'
         SONAR_PROJECT_KEY = 'agileSecurity'
         SONAR_PROJECT_NAME = 'agileSecurity'
-        SONAR_TOKEN = credentials('sonar-token') // Configura el token en Jenkins Credentials
+        SONAR_TOKEN = credentials('sonar-token')
     }
     stages {
         // Actualizacion de jenkinsfile 2
@@ -151,7 +151,7 @@ pipeline {
                             def scanComplete = false
                             while (!scanComplete) {
                                 def status = sh(
-                                    script: "curl -s ${ZAP_URL}/JSON/spider/view/status/?apikey=${ZAP_API_KEY} | jq -r '.status'",
+                                    script: "curl -s http://localhost:9090/JSON/spider/view/status/ | jq -r '.status'",
                                     returnStdout: true
                                 ).trim()
                                 echo "Estado del escaneo Spider: ${status}%"
