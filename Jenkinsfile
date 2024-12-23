@@ -9,13 +9,12 @@ pipeline {
         SONAR_TOKEN = credentials('sonar-token') // Configura el token en Jenkins Credentials
     }
     stages {
-
+        // Actualizacion de jenkinsfile 2
         stage('Debug Branch Name') {
             steps {
                 echo "Branch name detected: ${env.BRANCH_NAME}"
             }
         }
-        // para disparar pipe
         stage('Descargar Código y Checkout') {
             steps {
                 script {
@@ -211,7 +210,13 @@ pipeline {
 
     post {
         always {
-            dependencyCheckPublisher pattern: '**/build/dependency-check-report/dependency-check-report.xml'
+            script {
+                if (env.BRANCH_NAME == 'dev') {
+                    dependencyCheckPublisher pattern: '**/build/dependency-check-report/dependency-check-report.xml'
+                } else {
+                    echo "Skipping Dependency Check Publisher for branch: ${env.BRANCH_NAME}"
+                }
+            }
         }
         unstable {
             echo 'Pipeline completed with warnings'
