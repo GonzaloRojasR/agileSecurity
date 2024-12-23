@@ -211,7 +211,13 @@ pipeline {
 
     post {
         always {
-            dependencyCheckPublisher pattern: '**/build/dependency-check-report/dependency-check-report.xml'
+            script {
+                if (env.BRANCH_NAME == 'test') {
+                    dependencyCheckPublisher pattern: '**/build/dependency-check-report/dependency-check-report.xml'
+                } else {
+                    echo "Skipping Dependency Check Publisher for branch: ${env.BRANCH_NAME}"
+                }
+            }
         }
         unstable {
             echo 'Pipeline completed with warnings'
