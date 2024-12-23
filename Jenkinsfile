@@ -16,6 +16,7 @@ pipeline {
         BRANCH_NAME = env.BRANCH_NAME // Automáticamente proporcionado en un Multibranch Pipeline
     }
     stages {
+        // borrar
         stage('Debug Branch Name') {
             steps {
                 echo "Branch name detected: ${BRANCH_NAME}"
