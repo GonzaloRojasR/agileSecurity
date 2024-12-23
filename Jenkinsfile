@@ -6,7 +6,7 @@ pipeline {
         SONAR_HOST_URL = 'http://localhost:9000'
         SONAR_PROJECT_KEY = 'agileSecurity'
         SONAR_PROJECT_NAME = 'agileSecurity'
-        SONAR_TOKEN = credentials('sonar-token') // Configura el token en Jenkins Credentials
+        SONAR_TOKEN = credentials('sonar-token')
     }
     stages {
         // Actualizacion de jenkinsfile 2
@@ -118,17 +118,29 @@ pipeline {
                 stage('Exploración con Spider') {
                     steps {
                         script {
-                            catchError(buildResult: 'UNSTABLE', stageResult: 'UNSTABLE') {
-                                sh '''
+                            // Realiza el escaneo Spider
+                            sh '''
                                     curl -X POST "http://localhost:9090/JSON/spider/action/scan/" \
                                     --data "url=http://localhost:8081/rest/mscovid/estadoPais" \
                                     --data "maxChildren=10"
-                                    sleep 10
+                                    sleep 2
                                     curl -X POST "http://localhost:9090/JSON/spider/action/scan/" \
                                     --data "url=http://localhost:8081/rest/mscovid/test" \
                                     --data "maxChildren=10"
-                                    sleep 10
-                                '''
+                                '''        
+                            // Espera el estado 100 antes de continuar
+                            def scanComplete = false
+                            while (!scanComplete) {
+                                def status = sh(
+                                    script: "curl -s http://localhost:9090/JSON/spider/view/status/ | jq -r '.status'",
+                                    returnStdout: true
+                                ).trim()
+                                echo "Estado del escaneo Spider: ${status}%"
+                                if (status == '100') {
+                                    scanComplete = true
+                                } else {
+                                    sleep 5 // Espera 5 segundos antes de volver a consultar
+                                }
                             }
                         }
                     }
@@ -176,7 +188,7 @@ pipeline {
             steps {
                 script {
                     def jiraUrl = 'https://agile-security-test.atlassian.net'
-                    def comment = "Despliegue asociado a la historia ${env.JIRA_TAG}"
+                    def comment = "[MENSAJE AUTOMATICO] Despliegue realizado en ambiente [${env.BRANCH_NAME}]"
                     sh """
                         curl -X POST -u $JIRA_API_EMAIL:$JIRA_API_TOKEN "${jiraUrl}/rest/api/3/issue/${env.JIRA_TAG}/comment" \
                             -H "Content-Type: application/json" \
