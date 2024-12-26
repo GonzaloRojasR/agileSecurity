@@ -6,10 +6,10 @@ pipeline {
         SONAR_HOST_URL = 'http://localhost:9000'
         SONAR_PROJECT_KEY = 'agileSecurity'
         SONAR_PROJECT_NAME = 'agileSecurity'
-        SONAR_TOKEN = credentials('sonar-token') // Configura el token en Jenkins Credentials
+        SONAR_TOKEN = credentials('sonar-token')
     }
     stages {
-        // Actualizacion de jenkinsfile 2
+        // Ejemplo para demostración commit, merge y pipeline
         stage('Debug Branch Name') {
             steps {
                 echo "Branch name detected: ${env.BRANCH_NAME}"
@@ -118,17 +118,29 @@ pipeline {
                 stage('Exploración con Spider') {
                     steps {
                         script {
-                            catchError(buildResult: 'UNSTABLE', stageResult: 'UNSTABLE') {
-                                sh '''
+                            // Realiza el escaneo Spider
+                            sh '''
                                     curl -X POST "http://localhost:9090/JSON/spider/action/scan/" \
                                     --data "url=http://localhost:8081/rest/mscovid/estadoPais" \
                                     --data "maxChildren=10"
-                                    sleep 10
+                                    sleep 2
                                     curl -X POST "http://localhost:9090/JSON/spider/action/scan/" \
                                     --data "url=http://localhost:8081/rest/mscovid/test" \
                                     --data "maxChildren=10"
-                                    sleep 10
-                                '''
+                                '''        
+                            // Espera el estado 100 antes de continuar
+                            def scanComplete = false
+                            while (!scanComplete) {
+                                def status = sh(
+                                    script: "curl -s http://localhost:9090/JSON/spider/view/status/ | jq -r '.status'",
+                                    returnStdout: true
+                                ).trim()
+                                echo "Estado del escaneo Spider: ${status}%"
+                                if (status == '100') {
+                                    scanComplete = true
+                                } else {
+                                    sleep 5 // Espera 5 segundos antes de volver a consultar
+                                }
                             }
                         }
                     }
@@ -154,34 +166,50 @@ pipeline {
             }
         }
 
+        stage('Obtener Tag de Jira') {
+            steps {
+                script {
+                    sh "git fetch --tags"
+                    def jiraTag = sh(
+                        script: '''git tag --sort=-creatordate | grep -oE '^SCRUM-[0-9]+$' | head -n 1 || echo "NoTag"""''',
+                        returnStdout: true
+                    ).trim()
+                    if (jiraTag == "NoTag") {
+                        error "No se encontró ninguna etiqueta con el formato SCRUM-# en el repositorio"
+                    } else {
+                        echo "Etiqueta de Jira detectada: ${jiraTag}"
+                        env.JIRA_TAG = jiraTag
+                    }
+                }
+            }
+        }
+        
         stage('Comentar en Jira') {
             steps {
                 script {
-                    catchError(buildResult: 'UNSTABLE', stageResult: 'UNSTABLE') {
-                        def jiraUrl = 'https://agile-security-test.atlassian.net'
-                        def comment = "Despliegue en rama: ${env.BRANCH_NAME}"
-                        sh """
-                            curl -X POST -u $JIRA_API_EMAIL:$JIRA_API_TOKEN "${jiraUrl}/rest/api/3/issue/SCRUM-123/comment" \
-                                -H "Content-Type: application/json" \
-                                -d '{
-                                      "body": {
-                                        "type": "doc",
-                                        "version": 1,
+                    def jiraUrl = 'https://agile-security-test.atlassian.net'
+                    def comment = "[MENSAJE AUTOMATICO] Despliegue realizado en ambiente [${env.BRANCH_NAME}]"
+                    sh """
+                        curl -X POST -u $JIRA_API_EMAIL:$JIRA_API_TOKEN "${jiraUrl}/rest/api/3/issue/${env.JIRA_TAG}/comment" \
+                            -H "Content-Type: application/json" \
+                            -d '{
+                                  "body": {
+                                    "type": "doc",
+                                    "version": 1,
+                                    "content": [
+                                      {
+                                        "type": "paragraph",
                                         "content": [
                                           {
-                                            "type": "paragraph",
-                                            "content": [
-                                              {
-                                                "text": "${comment}",
-                                                "type": "text"
-                                              }
-                                            ]
+                                            "text": "${comment}",
+                                            "type": "text"
                                           }
                                         ]
                                       }
-                                    }'
-                        """
-                    }
+                                    ]
+                                  }
+                                }'
+                    """
                 }
             }
         }
