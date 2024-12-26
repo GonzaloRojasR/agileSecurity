@@ -9,7 +9,7 @@ pipeline {
         SONAR_TOKEN = credentials('sonar-token')
     }
     stages {
-        // Actualizacion de jenkinsfile 2
+        // Ejemplo para demostración commit, merge y pipeline
         stage('Debug Branch Name') {
             steps {
                 echo "Branch name detected: ${env.BRANCH_NAME}"
@@ -171,7 +171,7 @@ pipeline {
                 script {
                     sh "git fetch --tags"
                     def jiraTag = sh(
-                        script: '''git tag | grep -oE 'SCRUM-[0-9]+' || echo "NoTag"''',
+                        script: '''git tag --sort=-creatordate | grep -oE '^SCRUM-[0-9]+$' | head -n 1 || echo "NoTag"""''',
                         returnStdout: true
                     ).trim()
                     if (jiraTag == "NoTag") {
