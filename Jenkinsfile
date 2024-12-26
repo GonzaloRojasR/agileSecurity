@@ -171,7 +171,7 @@ pipeline {
                 script {
                     sh "git fetch --tags"
                     def jiraTag = sh(
-                        script: '''git tag | grep -oE 'SCRUM-[0-9]+' || echo "NoTag"''',
+                        script: '''git tag --sort=-creatordate | grep -oE '^SCRUM-[0-9]+$' | head -n 1 || echo "NoTag"""''',
                         returnStdout: true
                     ).trim()
                     if (jiraTag == "NoTag") {
